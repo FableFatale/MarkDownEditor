@@ -1,0 +1,37 @@
+/* Modern Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+
+/* Font Variables */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+/* Apply modern fonts to elements */
+body {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre, .cm-editor {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-normal);
+}
+
+h1, h2, h3, h4, h5, h6, button {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.025em;
+}
+
+button, .MuiButton-root {
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.01em;
+}
