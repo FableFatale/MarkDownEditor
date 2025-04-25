@@ -1,3 +1,183 @@
+/* 编辑器和预览区域布局 */
+.editor-container {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+  gap: 24px;
+  height: calc(100vh - 48px);
+  padding: 24px;
+  background-color: var(--background-default);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+  max-width: 2000px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.editor-section {
+  position: relative;
+  border-radius: 12px;
+  background-color: var(--background-paper);
+  border: 1px solid var(--border-color);
+  overflow: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+.editor-section:hover {
+  border-color: var(--border-hover-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.preview-section {
+  position: relative;
+  border-radius: 12px;
+  background-color: var(--background-paper);
+  border: 1px solid var(--border-color);
+  overflow: auto;
+  padding: 32px 40px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  line-height: 1.8;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+.preview-section:hover {
+  border-color: var(--border-hover-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* 滚动条样式 */
+.editor-section::-webkit-scrollbar,
+.preview-section::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.editor-section::-webkit-scrollbar-track,
+.preview-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-section::-webkit-scrollbar-thumb,
+.preview-section::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.editor-section::-webkit-scrollbar-thumb:hover,
+.preview-section::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* 全屏模式样式 */
+.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1300;
+  background-color: var(--background-default);
+}
+
+.fullscreen .editor-container {
+  height: 100vh;
+  padding: 12px;
+}
+
+/* 响应式布局 */
+/* 大屏幕 */
+@media (min-width: 1440px) {
+  .editor-container {
+    padding: 32px;
+    gap: 32px;
+    max-width: 1800px;
+  }
+}
+
+/* 平板和小屏幕笔记本 */
+@media (max-width: 1024px) {
+  .editor-container {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .editor-section,
+  .preview-section {
+    padding: 24px;
+  }
+}
+
+/* 竖屏平板和大屏手机 */
+@media (max-width: 768px) {
+  .editor-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: calc(100vh - 48px);
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .editor-section,
+  .preview-section {
+    height: calc(50vh - 32px);
+    min-height: 300px;
+    padding: 20px;
+  }
+}
+
+/* 小屏手机 */
+@media (max-width: 480px) {
+  .editor-container {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .editor-section,
+  .preview-section {
+    height: calc(50vh - 24px);
+    min-height: 250px;
+    padding: 16px;
+    font-size: 14px;
+  }
+}
+
+/* CSS变量定义 */
+:root {
+  --background-default: #FFFFFF;
+  --background-paper: #F7F8FA;
+  --border-color: #E5E7EB;
+  --border-hover-color: #D1D5DB;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] {
+  --background-default: #1A1B1E;
+  --background-paper: #27282B;
+  --border-color: #2D2E32;
+  --border-hover-color: #3D3E42;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --hover-shadow-color: rgba(0, 0, 0, 0.5);
+}
+
 /* Basic Markdown Styles */
 .markdown-body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

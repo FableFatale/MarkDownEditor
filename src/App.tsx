@@ -1,10 +1,23 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import CodeMirror, { ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import { markdown } from '@codemirror/lang-markdown';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { basicLight } from '@codemirror/theme-basic-light';
+import { v4 as uuidv4 } from 'uuid';
+import { Category, Article } from './types/article';
+import { Version } from './types/version';
+import { CategoryManager } from './components/CategoryManager';
+import { ArticleManager } from './components/ArticleManager';
+import { ImageUploader } from './components/ImageUploader';
+import { VersionManager } from './components/VersionManager';
+import { CoverGenerator } from './components/CoverGenerator';
+import { VideoLinkManager } from './components/VideoLinkManager';
+import { AuthManager } from './components/AuthManager';
+import { syncService } from './services/syncService';
+import { versionService } from './services/versionService';
+import { collaborationService } from './services/collaborationService';
+import { offlineService } from './services/offlineService';
+import { CollaborationUser, CollaborationState, TextOperation } from './types/collaboration';
+import { LargeFileEditor } from './components/LargeFileEditor';
 import { ThemeProvider, createTheme, PaletteMode } from '@mui/material/styles';
-import { Container, Box, CssBaseline, Grid, Paper, Button, Toolbar, IconButton, Stack, Divider, Tooltip, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItemButton, Drawer } from '@mui/material';
+import { Container, Box, CssBaseline, Grid, Paper, Button, Toolbar, IconButton, Stack, Divider, Tooltip, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItemButton, Drawer, alpha } from '@mui/material';
+import { AccountCircle, Login } from '@mui/icons-material';
 import {
   FormatBold,
   FormatItalic,
@@ -12,25 +25,31 @@ import {
   FormatListNumbered,
   Code,
   FormatStrikethrough,
-  Title,
-  Link,
-  Image,
-  PictureAsPdf,
-  FolderOpen,
-  Save,
-  Brightness4,
-  Brightness7,
-  History,
-  KeyboardTab,
-  Close,
-  Fullscreen,
-  FullscreenExit,
-  MenuOpen
+  TitleRounded,
+  InsertLink,
+  ImageRounded,
+  PictureAsPdfRounded,
+  FolderRounded,
+  SaveRounded,
+  DarkMode,
+  LightMode,
+  HistoryRounded,
+  KeyboardTabRounded,
+  CloseRounded,
+  FullscreenRounded,
+  FullscreenExitRounded,
+  MenuRounded,
+  FunctionsRounded,
+  BrokenImageRounded,
+  VideoLibraryRounded
 } from '@mui/icons-material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeSlug from 'rehype-slug';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import './markdown-styles.css';
@@ -47,771 +66,478 @@ const countWords = (text: string): number => {
   return words ? words.length : 0;
 };
 
+interface AuthButtonsProps {
+  isAuthenticated: boolean;
+  onLogin: () => void;
+  onLogout: () => void;
+}
+
+const AuthButtons: React.FC<AuthButtonsProps> = ({ isAuthenticated, onLogin, onLogout }) => (
+  <Box className="auth-buttons">
+    {isAuthenticated ? (
+      <Button
+        variant="outlined"
+        color="primary"
+        startIcon={<AccountCircle />}
+        onClick={onLogout}
+      >
+        退出登录
+      </Button>
+    ) : (
+      <>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={onLogin}
+        >
+          登录
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Login />}
+          onClick={onLogin}
+        >
+          注册
+        </Button>
+      </>
+    )}
+  </Box>
+);
+
 function App() {
-  const [value, setValue] = useState('');
-  const previewRef = useRef<HTMLDivElement>(null); // Add ref for preview pane
-  const editorRef = useRef<ReactCodeMirrorRef>(null); // Add ref for editor
-  const [themeMode, setThemeMode] = useState<PaletteMode>('light'); // Add theme mode state
-  const [recentFiles, setRecentFiles] = useState<string[]>([]);
-  const [recentFilesAnchorEl, setRecentFilesAnchorEl] = useState<null | HTMLElement>(null);
-  const recentFilesOpen = Boolean(recentFilesAnchorEl);
-  const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
-  const [wordCount, setWordCount] = useState(0); // State for word count
-  const [charCount, setCharCount] = useState(0); // State for character count
-  const [lineCount, setLineCount] = useState(0); // State for line count
-  const [isFullScreen, setIsFullScreen] = useState(false); // State for full screen mode
-  const [isOutlineOpen, setIsOutlineOpen] = useState(false); // State for outline drawer
+  // 类型定义
   interface OutlineItem {
     id: string;
     text: string;
     level: number;
   }
-  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]); // State for outline items
 
-  // Create theme based on themeMode state
+  // 状态管理
+  const [value, setValue] = useState('# 欢迎使用 Markdown 编辑器\n\n这是一个简单的示例文档。您可以开始编写您的内容了！');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
+  const [themeMode, setThemeMode] = useState<PaletteMode>('light');
+  const [recentFiles, setRecentFiles] = useState<string[]>([]);
+  const [recentFilesAnchorEl, setRecentFilesAnchorEl] = useState<null | HTMLElement>(null);
+  const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
+  const [isImageUploaderOpen, setIsImageUploaderOpen] = useState(false);
+  const [isVersionManagerOpen, setIsVersionManagerOpen] = useState(false);
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [collaborationState, setCollaborationState] = useState<CollaborationState>(collaborationService.getState());
+  const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
+  const [isCoverGeneratorOpen, setIsCoverGeneratorOpen] = useState(false);
+  const [isVideoLinkManagerOpen, setIsVideoLinkManagerOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
+
+  // 引用和常量
+  const previewRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const drawerWidth = 240;
+  const recentFilesOpen = Boolean(recentFilesAnchorEl);
+
+  // 认证相关函数
+  const handleLogin = async () => {
+    try {
+      setIsAuthenticated(true);
+      // 登录成功后加载用户数据
+      await loadOfflineData();
+    } catch (error) {
+      console.error('登录失败:', error);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsAuthenticated(false);
+      // 清理用户相关状态
+      setValue('# 欢迎使用 Markdown 编辑器\n\n这是一个简单的示例文档。您可以开始编写您的内容了！');
+      setCurrentArticleId(null);
+      setCategories([]);
+      setArticles([]);
+      setVersions([]);
+    } catch (error) {
+      console.error('退出登录失败:', error);
+    }
+  };
+
+  // 大纲相关函数
+  const toggleOutline = () => {
+    setIsOutlineOpen((prev) => !prev);
+  };
+
+  // 分类管理相关函数
+  const handleAddCategory = (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newCategory: Category = {
+      id: uuidv4(),
+      ...categoryData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    setCategories([...categories, newCategory]);
+  };
+
+  const handleEditCategory = (updatedCategory: Category) => {
+    setCategories(categories.map(cat =>
+      cat.id === updatedCategory.id ? updatedCategory : cat
+    ));
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    setCategories(categories.filter(cat => cat.id !== categoryId));
+    // 同时更新所有包含该分类的文章
+    setArticles(articles.map(article => ({
+      ...article,
+      categories: article.categories.filter(id => id !== categoryId)
+    })));
+  };
+
+  // 文章管理相关函数
+  const handleCreateArticle = () => {
+    const newArticle: Article = {
+      id: uuidv4(),
+      title: '新文章',
+      content: '',
+      categories: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      wordCount: 0,
+      charCount: 0
+    };
+    setArticles([...articles, newArticle]);
+    setCurrentArticleId(newArticle.id);
+    setValue('');
+  };
+
+  const handleArticleEdit = async (articleId: string) => {
+    const article = articles.find(a => a.id === articleId);
+    if (article) {
+      setCurrentArticleId(articleId);
+      setValue(article.content);
+      // 加载文章的版本历史
+      const articleVersions = await versionService.getVersionsByArticleId(articleId);
+      setVersions(articleVersions);
+    }
+  };
+
+  // 自动保存功能
+  useEffect(() => {
+    if (!currentArticleId || !isAuthenticated) return;
+
+    const autoSaveTimer = setInterval(() => {
+      if (currentArticleId && value) {
+        const currentArticle = articles.find(a => a.id === currentArticleId);
+        if (currentArticle) {
+          const updatedArticle = {
+            ...currentArticle,
+            content: value,
+            wordCount: countWords(value),
+            charCount: value.length,
+            updatedAt: new Date()
+          };
+          setArticles(prevArticles =>
+            prevArticles.map(a => a.id === currentArticleId ? updatedArticle : a)
+          );
+        }
+      }
+    }, 30000); // 每30秒自动保存一次
+
+    return () => clearInterval(autoSaveTimer);
+  }, [currentArticleId, value, isAuthenticated, articles]);
+
+  // 数据同步相关函数
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+
+      // 获取上次同步时间后的修改数据
+      const lastSyncTime = new Date(localStorage.getItem('lastSyncTime') || '0');
+      const modifiedArticles = await offlineService.getModifiedArticles(lastSyncTime);
+      const modifiedCategories = await offlineService.getModifiedCategories(lastSyncTime);
+
+      // 同步分类
+      const categoryResult = await syncService.syncCategories(modifiedCategories);
+      if (!categoryResult.success) {
+        throw new Error(categoryResult.error || '分类同步失败');
+      }
+
+      // 同步文章
+      const articleResult = await syncService.syncArticles(modifiedArticles);
+      if (!articleResult.success) {
+        throw new Error(articleResult.error || '文章同步失败');
+      }
+
+      // 更新同步时间
+      localStorage.setItem('lastSyncTime', new Date().toISOString());
+
+      // 清理过期的离线数据（保留最近30天的数据）
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      await offlineService.cleanupOldData(thirtyDaysAgo);
+    } catch (error) {
+      console.error('同步失败:', error);
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // 主题切换
+  const toggleTheme = () => {
+    setThemeMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+  };
+
+  // 全屏切换
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullScreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
+
+  // 监听全屏状态变化
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // 图片上传处理
+  const handleImageUpload = (imageUrl: string) => {
+    const imageMarkdown = `![](${imageUrl})`;
+    if (editorRef.current?.view) {
+      const view = editorRef.current.view;
+      const pos = view.state.selection.main.head;
+      view.dispatch({
+        changes: { from: pos, insert: imageMarkdown + '\n' }
+      });
+    }
+    setIsImageUploaderOpen(false);
+  };
+
+  // 封面图处理
+  const handleCoverSave = (coverUrl: string) => {
+    const coverMarkdown = `![封面图](${coverUrl})`;
+    if (editorRef.current?.view) {
+      const view = editorRef.current.view;
+      const pos = view.state.selection.main.head;
+      view.dispatch({
+        changes: { from: pos, insert: coverMarkdown + '\n' }
+      });
+    }
+    setIsCoverGeneratorOpen(false);
+  };
+
+  // 视频链接处理
+  const handleVideoLinkInsert = (markdown: string) => {
+    if (editorRef.current?.view) {
+      const view = editorRef.current.view;
+      const pos = view.state.selection.main.head;
+      view.dispatch({
+        changes: { from: pos, insert: markdown + '\n' }
+      });
+    }
+    setIsVideoLinkManagerOpen(false);
+  };
+
+  // 主题配置
   const theme = useMemo(
     () =>
       createTheme({
         palette: {
           mode: themeMode,
+          primary: {
+            main: '#5E6AD2',
+            light: '#8B8FE5',
+            dark: '#4A4FB8',
+          },
+          background: {
+            default: themeMode === 'light' ? '#FFFFFF' : '#1A1B1E',
+            paper: themeMode === 'light' ? '#F7F8FA' : '#27282B',
+          },
+        },
+        components: {
+          MuiToolbar: {
+            styleOverrides: {
+              root: {
+                backdropFilter: 'blur(12px)',
+                backgroundColor: alpha(themeMode === 'light' ? '#FFFFFF' : '#1A1B1E', 0.85),
+                borderBottom: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`,
+                height: 48,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0 12px',
+                gap: '6px',
+                '& .MuiIconButton-root': {
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  margin: '0 2px',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 4,
+                  color: themeMode === 'light' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                  '&:hover': {
+                    backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.06),
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                },
+                '& .MuiButton-root': {
+                  borderRadius: 6,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  height: 28,
+                  minWidth: 80,
+                  padding: '0 12px',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  color: themeMode === 'light' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                  '&:hover': {
+                    backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.06),
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                  },
+                },
+                '& .auth-buttons': {
+                  marginLeft: 'auto',
+                  display: 'flex',
+                  gap: '12px',
+                  opacity: isFullScreen ? 0 : 1,
+                  visibility: isFullScreen ? 'hidden' : 'visible',
+                  transition: 'all 0.2s ease-in-out',
+                },
+              },
+            },
+          },
+          MuiIconButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: 4,
+                width: 28,
+                height: 28,
+                padding: '4px',
+                color: themeMode === 'light' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.06),
+                  transform: 'translateY(-1px)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
+                '&.Mui-selected': {
+                  backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.08),
+                  '&:hover': {
+                    backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.12),
+                  },
+                },
+              },
+            },
+          },
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                minWidth: 80,
+                height: 28,
+                padding: '0 12px',
+                fontSize: '0.875rem',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                },
+              },
+              contained: {
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                },
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                borderRadius: 8,
+                border: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`,
+                boxShadow: 'none',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: themeMode === 'light' 
+                    ? '0 4px 12px rgba(0, 0, 0, 0.05)'
+                    : '0 4px 12px rgba(0, 0, 0, 0.2)',
+                },
+              },
+            },
+          },
         },
       }),
-    [themeMode],
+    [themeMode, isFullScreen],
   );
 
-  const toggleTheme = () => {
-    setThemeMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-  };
-
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-    // State update will be handled by the event listener
-  };
-
-  const toggleOutline = () => {
-    setIsOutlineOpen((prev) => !prev);
-  };
-
-  // Load recent files from localStorage on component mount
-  useEffect(() => {
-    const storedRecentFiles = localStorage.getItem('recentFiles');
-    if (storedRecentFiles) {
-      setRecentFiles(JSON.parse(storedRecentFiles));
-    }
-  }, []);
-
-  // Add keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if Ctrl/Cmd key is pressed
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'b': // Bold
-            e.preventDefault();
-            handleFormat('bold');
-            break;
-          case 'i': // Italic
-            e.preventDefault();
-            handleFormat('italic');
-            break;
-          case 'l': // Link
-            e.preventDefault();
-            handleFormat('link');
-            break;
-          case 'k': // Code
-            e.preventDefault();
-            handleFormat('code');
-            break;
-          case 's': // Save
-            e.preventDefault();
-            handleSaveFile();
-            break;
-          case 'o': // Open
-            e.preventDefault();
-            handleOpenFile();
-            break;
-          case 'p': // Export PDF
-            if (e.shiftKey) {
-              e.preventDefault();
-              handleExportPdf();
-            }
-            break;
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Effect to listen for fullscreen changes
-  useEffect(() => {
-    const handleFullScreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullScreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
-  }, []);
-
-  // Update word and character count when value changes
-  useEffect(() => {
-    setCharCount(value.length);
-    setWordCount(countWords(value));
-    // Calculate line count (handle empty string case)
-    setLineCount(value ? value.split('\n').length : 0);
-    }, [value]);
-
-  // Effect to extract headings for outline
-  useEffect(() => {
-    if (previewRef.current) {
-      const headings = previewRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      const items: OutlineItem[] = Array.from(headings).map((heading) => ({
-        id: heading.id,
-        text: heading.textContent || '',
-        level: parseInt(heading.tagName.substring(1), 10),
-      }));
-      setOutlineItems(items);
-    }
-    // Dependency on 'value' ensures this runs when content changes and re-renders
-    // Adding a small delay might be necessary if rehype-slug runs slightly after initial render
-    const timer = setTimeout(() => {
-        if (previewRef.current) {
-            const headings = previewRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
-            const items: OutlineItem[] = Array.from(headings)
-                .filter(heading => heading.id) // Ensure heading has an ID from rehype-slug
-                .map((heading) => ({
-                    id: heading.id,
-                    text: heading.textContent || '',
-                    level: parseInt(heading.tagName.substring(1), 10),
-                }));
-            setOutlineItems(items);
-        }
-    }, 100); // Adjust delay as needed
-
-    return () => clearTimeout(timer);
-  }, [value, themeMode]); // Rerun when value or theme changes (preview re-renders)
-
-  const handleOutlineItemClick = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-const onChange = (val: string) => {
-  setValue(val);
-  };
-
-  // Extend handleFormat type to include new formats
-  const handleFormat = (type: 'bold' | 'italic' | 'unordered-list' | 'ordered-list' | 'code' | 'strikethrough' | 'h1' | 'h2' | 'link' | 'image') => {
-    const editorView = editorRef.current?.view;
-    if (!editorView) return;
-
-    const { state } = editorView;
-    const changes = state.changeByRange((range) => {
-      const text = state.sliceDoc(range.from, range.to);
-      let newText = '';
-      let newSelection = range;
-      const isMultiLine = text.includes('\n');
-
-      switch (type) {
-        case 'bold':
-          newText = `**${text}**`;
-          // Adjust selection if text was selected
-          if (range.from !== range.to) {
-            newSelection = state.selection.main.extend(range.from + 2, range.to + 2);
-          } else {
-            // Place cursor in the middle if no text selected
-            newSelection = state.selection.main.extend(range.from + 2);
-          }
-          break;
-        case 'italic':
-          newText = `*${text}*`;
-          if (range.from !== range.to) {
-            newSelection = state.selection.main.extend(range.from + 1, range.to + 1);
-          } else {
-            newSelection = state.selection.main.extend(range.from + 1);
-          }
-          break;
-        case 'unordered-list':
-          // Add '- ' prefix to each selected line or insert '- ' if no selection
-          newText = text.split('\n').map(line => `- ${line}`).join('\n');
-          if (range.from === range.to) newText = '- ';
-          newSelection = state.selection.main.extend(range.from + newText.length);
-          break;
-        case 'ordered-list':
-          // Add '1. ' prefix to each selected line or insert '1. ' if no selection
-          newText = text.split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
-          if (range.from === range.to) newText = '1. ';
-          newSelection = state.selection.main.extend(range.from + newText.length);
-          break;
-        case 'code':
-          newText = '```\n' + text + '\n```';
-          if (range.from !== range.to) {
-            newSelection = state.selection.main.extend(range.from + 3, range.to + 3);
-          } else {
-            newSelection = state.selection.main.extend(range.from + 3);
-          }
-          break;
-        // Add new cases for strikethrough, headings, link, image
-        case 'strikethrough':
-          newText = `~~${text}~~`;
-          if (range.from !== range.to) {
-            newSelection = state.selection.main.extend(range.from + 2, range.to + 2);
-          } else {
-            newSelection = state.selection.main.extend(range.from + 2);
-          }
-          break;
-        case 'h1':
-          newText = isMultiLine
-            ? text.split('\n').map(line => `# ${line}`).join('\n')
-            : `# ${text}`;
-          if (range.from === range.to) newText = '# ';
-          newSelection = state.selection.main.extend(range.from + newText.length);
-          break;
-        case 'h2':
-           newText = isMultiLine
-            ? text.split('\n').map(line => `## ${line}`).join('\n')
-            : `## ${text}`;
-          if (range.from === range.to) newText = '## ';
-          newSelection = state.selection.main.extend(range.from + newText.length);
-          break;
-        case 'link':
-          newText = `[${text || 'link text'}](url)`;
-          // Select 'url' part for easy replacement
-          if (range.from !== range.to) {
-             newSelection = state.selection.main.extend(range.from + newText.length - 4, range.from + newText.length -1);
-          } else {
-             newSelection = state.selection.main.extend(range.from + newText.length - 4, range.from + newText.length -1);
-          }
-          break;
-        case 'image':
-          newText = `![${text || 'alt text'}](image url)`;
-           // Select 'image url' part for easy replacement
-          if (range.from !== range.to) {
-             newSelection = state.selection.main.extend(range.from + newText.length - 10, range.from + newText.length -1);
-          } else {
-             newSelection = state.selection.main.extend(range.from + newText.length - 10, range.from + newText.length -1);
-          }
-          break;
-      }
-
-      return {
-        changes: { from: range.from, to: range.to, insert: newText },
-        range: newSelection,
-      };
-    });
-
-    editorView.dispatch(changes);
-    // Ensure the editor keeps focus after the change
-    editorView.focus();
-  };
-
-  const handleExportPdf = () => {
-    if (previewRef.current) {
-      html2canvas(previewRef.current).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        const imgX = (pdfWidth - imgWidth * ratio) / 2;
-        const imgY = 30; // Add some margin top
-        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-        pdf.save('markdown-export.pdf');
-      });
-    }
-  };
-
-  // Function to handle opening a file
-  const handleOpenFile = async () => {
-    try {
-      // @ts-ignore - Using experimental File System Access API
-      const [fileHandle] = await window.showOpenFilePicker({
-        types: [
-          {
-            description: 'Markdown Files',
-            accept: {
-              'text/markdown': ['.md'],
-            },
-          },
-        ],
-        excludeAcceptAllOption: true,
-        multiple: false,
-      });
-      const file = await fileHandle.getFile();
-      const contents = await file.text();
-      setValue(contents);
-      
-      // Add to recent files
-      const fileName = file.name;
-      setRecentFiles(prev => {
-        // Remove if already exists and add to the beginning
-        const newRecentFiles = prev.filter(f => f !== fileName);
-        newRecentFiles.unshift(fileName);
-        // Keep only the last 5 files
-        const limitedFiles = newRecentFiles.slice(0, 5);
-        // Save to localStorage
-        localStorage.setItem('recentFiles', JSON.stringify(limitedFiles));
-        return limitedFiles;
-      });
-    } catch (err) {
-      console.error('Error opening file:', err);
-      // Handle errors, e.g., user cancellation
-    }
-  };
-  
-  const handleRecentFilesClick = (event: React.MouseEvent<HTMLElement>) => {
-    setRecentFilesAnchorEl(event.currentTarget);
-  };
-  
-  const handleRecentFilesClose = () => {
-    setRecentFilesAnchorEl(null);
-  };
-
-  // Function to handle saving a file
-  const handleSaveFile = async () => {
-    try {
-      // @ts-ignore - Using experimental File System Access API
-      const fileHandle = await window.showSaveFilePicker({
-        types: [
-          {
-            description: 'Markdown Files',
-            accept: {
-              'text/markdown': ['.md'],
-            },
-          },
-        ],
-      });
-      const writable = await fileHandle.createWritable();
-      await writable.write(value);
-      await writable.close();
-    } catch (err) {
-      console.error('Error saving file:', err);
-      // Handle errors, e.g., user cancellation
-    }
-  };
-
-
   return (
-    <ThemeProvider theme={theme}> {/* Wrap with ThemeProvider */}
+    <ThemeProvider theme={theme}>
       <CssBaseline />
-      {/* Adjust Container padding and background based on theme */}
-      <Container maxWidth={false} sx={{ height: '100vh', display: 'flex', flexDirection: 'column', p: { xs: 1, sm: 2, md: 3 }, bgcolor: 'background.default', background: themeMode === 'light' ? 'linear-gradient(145deg, #f8f9fa, #ffffff)' : 'linear-gradient(145deg, #0d1117, #161b22)' }} disableGutters={isFullScreen}> {/* Adjust gutters based on fullscreen */}
-        {/* Toolbar remains visible in fullscreen */}
-        <Toolbar variant="dense" sx={{
-          borderBottom: 1,
-          borderColor: 'divider',
-          flexShrink: 0,
-          position: isFullScreen ? 'fixed' : 'relative', // Fix toolbar in fullscreen
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 1100, // Ensure toolbar is above other content
-          width: '100%',
-          px: { xs: 1, sm: 2, md: 3 },
-          mb: 2,
-          bgcolor: themeMode === 'light' ? 'grey.100' : 'grey.900',
-          borderRadius: { xs: 8, sm: 12 },
-          boxShadow: themeMode === 'light'
-            ? '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05)'
-            : '0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2)',
-          background: themeMode === 'light'
-            ? 'linear-gradient(135deg, #f5f7fa, #e4e7eb)'
-            : 'linear-gradient(135deg, #2d3748, #1a202c)',
-          transition: 'all 0.3s ease',
-          overflowX: 'auto',
-        }}>
-          <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center" sx={{ width: '100%' }} divider={<Divider orientation="vertical" flexItem />}>
-             <Tooltip title="切换大纲">
-               <IconButton onClick={toggleOutline} size="small" sx={{ p: 1.2, borderRadius: 8, backdropFilter: 'blur(4px)', '&:hover': { bgcolor: themeMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.08)', transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.15)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' }, transition: 'all 0.2s ease' }}>
-                 <MenuOpen fontSize="small" />
-               </IconButton>
-             </Tooltip>
-               {/* Text Formatting Group */}
-               <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 1, fontWeight: 'bold', color: 'text.secondary' }}>格式</Typography>
-              <Tooltip title="加粗 (Ctrl+B)">
-                <IconButton onClick={() => handleFormat('bold')} size="small" sx={{ p: 1.2, borderRadius: 8, backdropFilter: 'blur(4px)', '&:hover': { bgcolor: themeMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.08)', transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.15)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' }, transition: 'all 0.2s ease' }}>
-                  <FormatBold fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="斜体 (Ctrl+I)">
-                <IconButton onClick={() => handleFormat('italic')} size="small" sx={{ p: 1.2, borderRadius: 8, backdropFilter: 'blur(4px)', '&:hover': { bgcolor: themeMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.08)', transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.15)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' }, transition: 'all 0.2s ease' }}>
-                  <FormatItalic fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="删除线">
-                <IconButton onClick={() => handleFormat('strikethrough')} size="small" sx={{ p: 1.2, borderRadius: 8, backdropFilter: 'blur(4px)', '&:hover': { bgcolor: themeMode === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.08)', transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.15)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' }, transition: 'all 0.2s ease' }}>
-                  <FormatStrikethrough fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            {/* Headings Group */}
-            <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 1, fontWeight: 'bold', color: 'text.secondary' }}>标题</Typography>
-              <Tooltip title="一级标题">
-                <IconButton onClick={() => handleFormat('h1')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <Title fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="二级标题">
-                <IconButton onClick={() => handleFormat('h2')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <Title sx={{ fontSize: '1rem' }} />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            {/* Lists Group */}
-            <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 1, fontWeight: 'bold', color: 'text.secondary' }}>列表</Typography>
-              <Tooltip title="无序列表">
-                <IconButton onClick={() => handleFormat('unordered-list')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <FormatListBulleted fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="有序列表">
-                <IconButton onClick={() => handleFormat('ordered-list')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <FormatListNumbered fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            {/* Insert Group */}
-            <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 1, fontWeight: 'bold', color: 'text.secondary' }}>插入</Typography>
-              <Tooltip title="代码块 (Ctrl+K)">
-                <IconButton onClick={() => handleFormat('code')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <Code fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="链接 (Ctrl+L)">
-                <IconButton onClick={() => handleFormat('link')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <Link fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="图片">
-                <IconButton onClick={() => handleFormat('image')} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <Image fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            {/* View Options Group */}
-            <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 1, fontWeight: 'bold', color: 'text.secondary' }}>视图</Typography>
-              <Tooltip title={isFullScreen ? "退出全屏" : "全屏模式"}>
-                <IconButton onClick={toggleFullScreen} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  {isFullScreen ? <FullscreenExit fontSize="small" /> : <Fullscreen fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={themeMode === 'light' ? "切换深色模式" : "切换浅色模式"}>
-                <IconButton onClick={toggleTheme} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  {themeMode === 'dark' ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            {/* File Operations Group */}
-            <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Typography variant="caption" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', mr: 1, fontWeight: 'bold', color: 'text.secondary' }}>文件</Typography>
-              <Tooltip title="打开文件 (Ctrl+O)">
-                <IconButton onClick={handleOpenFile} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <FolderOpen fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="保存文件 (Ctrl+S)">
-                <IconButton onClick={handleSaveFile} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <Save fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="导出为 PDF (Ctrl+Shift+P)">
-                <IconButton onClick={handleExportPdf} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <PictureAsPdf fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="最近打开">
-                <IconButton
-                  onClick={handleRecentFilesClick}
-                  size="small"
-                  sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}
-                  aria-controls={recentFilesOpen ? 'recent-files-menu' : undefined}
-                  aria-haspopup="true"
-                  aria-expanded={recentFilesOpen ? 'true' : undefined}
-                >
-                  <History fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                id="recent-files-menu"
-                anchorEl={recentFilesAnchorEl}
-                open={recentFilesOpen}
-                onClose={handleRecentFilesClose}
-                MenuListProps={{
-                  'aria-labelledby': 'recent-files-button',
-                }}
-              >
-                {recentFiles.length > 0 ? (
-                  recentFiles.map((file) => (
-                    <MenuItem key={file} onClick={() => { /* Implement opening recent file */ handleRecentFilesClose(); }}>
-                      <ListItemText primary={file} />
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled>没有最近文件</MenuItem>
-                )}
-              </Menu>
-            </Stack>
-            {/* Spacer to push theme toggle to the right */}
-            <Box sx={{ flexGrow: 1 }} />
-            {/* Other Controls Group */}
-            <Stack direction="row" spacing={{ xs: 0.5, sm: 1 }}>
-              <Tooltip title="键盘快捷键">
-                <IconButton onClick={() => setShortcutsDialogOpen(true)} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  <KeyboardTab fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={themeMode === 'light' ? '切换到深色模式' : '切换到浅色模式'}>
-                <IconButton onClick={toggleTheme} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  {themeMode === 'light' ? <Brightness4 fontSize="small" /> : <Brightness7 fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={isFullScreen ? '退出全屏' : '全屏'}>
-                <IconButton onClick={toggleFullScreen} size="small" sx={{ p: 1.2, borderRadius: 1.5, '&:hover': { bgcolor: 'action.hover', transform: 'translateY(-1px)', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }, '&:active': { transform: 'translateY(0px)', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.1)' } }}>
-                  {isFullScreen ? <FullscreenExit fontSize="small" /> : <Fullscreen fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-            </Stack>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <Toolbar variant="dense" sx={{ minHeight: 48 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <IconButton onClick={toggleTheme}>
+              {themeMode === 'light' ? <DarkMode /> : <LightMode />}
+            </IconButton>
+            <IconButton onClick={toggleFullScreen}>
+              {isFullScreen ? <FullscreenExitRounded /> : <FullscreenRounded />}
+            </IconButton>
           </Stack>
+          <AuthButtons
+            isAuthenticated={isAuthenticated}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+          />
         </Toolbar>
-
-        {/* Outline Drawer */}
-          <Drawer
-            anchor="left"
-            open={isOutlineOpen}
-            onClose={toggleOutline}
-            sx={{ '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 240, mt: { xs: '56px', sm: '64px' }, height: 'calc(100% - 64px)', borderRight: `1px solid ${theme.palette.divider}` } }} // Adjust top margin based on Toolbar height
-            variant="temporary" // Or 'persistent' if you want it to push content
-          >
-            <Toolbar /> {/* Add Toolbar spacing */} 
-            <Box sx={{ overflow: 'auto', p: 2 }}>
-              <Typography variant="h6" gutterBottom component="div">
-                文档大纲
-              </Typography>
-              <List dense>
-                {outlineItems.length > 0 ? (
-                  outlineItems.map((item) => (
-                    <ListItemButton
-                      key={item.id}
-                      onClick={() => handleOutlineItemClick(item.id)}
-                      sx={{ pl: item.level * 2 }} // Indent based on heading level
-                    >
-                      <ListItemText primary={item.text}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          sx: {
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            color: 'text.secondary',
-                            fontSize: '0.875rem' // Slightly smaller font
-                          }
-                        }}
-                      />
-                    </ListItemButton>
-                  ))
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 2 }}>
-                    没有找到标题。
-                  </Typography>
-                )}
-              </List>
-            </Box>
-          </Drawer>
-
-          {/* Main Content Area - Adjust padding/margin if Drawer is persistent */}
-          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', mt: isFullScreen ? '64px' : 0 }}> {/* Add top margin in fullscreen to account for fixed toolbar */} 
-            {/* Grid for Editor and Preview */}
-            <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden', height: '100%' }}>
-            {/* Editor Pane */}
-            {/* Adjust width based on fullscreen and outline visibility */}
-            <Grid item xs={12} md={isFullScreen ? 6 : 5} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Paper elevation={3} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 2, boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
-                <CodeMirror
-                  ref={editorRef} // Assign ref
-                  value={value}
-                  height="100%"
-                  extensions={[markdown()]} // Enable Markdown language support
-                  theme={themeMode === 'light' ? basicLight : oneDark} // Apply theme based on state
-                  onChange={onChange}
-                  style={{ fontSize: '16px', height: '100%', overflow: 'auto' }}
-                />
-              </Paper>
-            </Grid>
-
-            {/* Preview Pane */}
-            {/* Adjust width based on fullscreen and outline visibility */}
-            <Grid item xs={12} md={isFullScreen ? 6 : 4} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Paper elevation={3} sx={{ flexGrow: 1, overflow: 'auto', p: 3, borderRadius: 2, boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
-                <Box ref={previewRef} className={`markdown-body ${themeMode}`}> {/* Add ref and theme class */} 
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]} // Enable GFM (tables, strikethrough, etc.)
-                    rehypePlugins={[
-                      rehypeHighlight, // Add syntax highlighting
-                      rehypeSlug // Add IDs to headings
-                    ]}
-                    components={{
-                      // Customize heading rendering if needed
-                      // h1: ({node, ...props}) => <h1 style={{color: 'red'}} {...props} />,
-                    }}
-                  >
-                    {value}
-                  </ReactMarkdown>
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Outline Pane - Conditionally render based on fullscreen */} 
-            {!isFullScreen && (
-              <Grid item md={3} sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', height: '100%' }}>
-                <Paper elevation={3} sx={{ flexGrow: 1, overflow: 'auto', p: 2, borderRadius: 2, boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'text.secondary', mb: 1 }}>
-                    大纲
-                  </Typography>
-                  <List dense disablePadding>
-                    {outlineItems.length > 0 ? (
-                      outlineItems.map((item) => (
-                        <ListItemButton
-                          key={item.id}
-                          onClick={() => handleOutlineItemClick(item.id)}
-                          sx={{
-                            pl: item.level * 2, // Indent based on heading level
-                            py: 0.5, // Adjust vertical padding
-                            borderRadius: 1,
-                            '&:hover': {
-                              bgcolor: 'action.hover'
-                            }
-                          }}
-                        >
-                          <ListItemText
-                            primary={item.text}
-                            primaryTypographyProps={{
-                              variant: 'body2',
-                              sx: {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                color: 'text.secondary',
-                                fontSize: '0.875rem' // Slightly smaller font
-                              }
-                            }}
-                          />
-                        </ListItemButton>
-                      ))
-                    ) : (
-                      <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
-                        无标题
-                      </Typography>
-                    )}
-                  </List>
-                </Paper>
-              </Grid>
-            )}
-          </Grid>
-
-          {/* Status Bar */}
-          <Box sx={{ borderTop: 1, borderColor: 'divider', p: 1, mt: 2, flexShrink: 0, bgcolor: 'background.paper', borderRadius: 1 }}>
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Typography variant="caption" color="text.secondary">字数: {wordCount}</Typography>
-              <Typography variant="caption" color="text.secondary">字符: {charCount}</Typography>
-              <Typography variant="caption" color="text.secondary">行数: {lineCount}</Typography>
-            </Stack>
-          </Box>
-
-          {/* Shortcuts Dialog */}
-          <Dialog open={shortcutsDialogOpen} onClose={() => setShortcutsDialogOpen(false)} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              键盘快捷键
-              <IconButton onClick={() => setShortcutsDialogOpen(false)} size="small">
-                <Close />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1" gutterBottom>格式化</Typography>
-                  <Typography variant="body2">加粗: Ctrl/Cmd + B</Typography>
-                  <Typography variant="body2">斜体: Ctrl/Cmd + I</Typography>
-                  <Typography variant="body2">链接: Ctrl/Cmd + L</Typography>
-                  <Typography variant="body2">代码: Ctrl/Cmd + K</Typography>
-                  {/* Add other formatting shortcuts here */}
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1" gutterBottom>文件操作</Typography>
-                  <Typography variant="body2">保存: Ctrl/Cmd + S</Typography>
-                  <Typography variant="body2">打开: Ctrl/Cmd + O</Typography>
-                  <Typography variant="body2">导出 PDF: Ctrl/Cmd + Shift + P</Typography>
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setShortcutsDialogOpen(false)}>关闭</Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      </Drawer>
-      {/* 主体内容区域 */}
-      <Container maxWidth="xl" sx={{ height: '100vh', display: 'flex', flexDirection: 'column', p: 0 }}>
-        {/* 工具栏 */}
-        <Toolbar disableGutters sx={{ minHeight: 48, px: 1, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
-          {/* ...工具栏内容... */}
-        </Toolbar>
-        {/* 编辑器和预览区域 */}
-        <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* 编辑器区域 */}
-          <Box sx={{ flex: 1, p: 2, overflow: 'auto', minWidth: 0 }}>
-            <CodeMirror
-              ref={editorRef}
-              value={value}
-              height="100%"
-              minHeight="300px"
-              theme={themeMode === 'dark' ? oneDark : basicLight}
-              extensions={[markdown()]}
-              onChange={onChange}
+        <Box className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`} sx={{ flex: 1, display: 'flex', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
+          <Box className="editor-section" sx={{ flex: 1 }}>
+            <LargeFileEditor
+              content={value}
+              onChange={setValue}
+              theme={themeMode}
             />
           </Box>
-          {/* 预览区域 */}
-          <Box sx={{ flex: 1, p: 2, overflow: 'auto', minWidth: 0 }}>
-            <div ref={previewRef} className={themeMode === 'dark' ? 'markdown-body-dark' : 'markdown-body'}>
-              <ReactMarkdown
-                children={value}
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight, rehypeSlug]}
-                components={{
-                  img: ({node, ...props}) => (
-                    <img {...props} style={{ maxWidth: '100%', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }} alt={props.alt || ''} />
-                  ),
-                  a: ({node, ...props}) => (
-                    <a {...props} style={{ color: themeMode === 'dark' ? '#90caf9' : '#1976d2', textDecoration: 'underline', wordBreak: 'break-all' }} target="_blank" rel="noopener noreferrer">{props.children}</a>
-                  )
-                }}
-              />
-            </div>
+          <Box className="preview-section markdown-body" sx={{ flex: 1, overflow: 'auto' }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeHighlight, rehypeSlug, rehypeKatex]}
+            >
+              {value}
+            </ReactMarkdown>
           </Box>
         </Box>
-      </Container>
-      {/* 状态栏 */}
-      <Box sx={{ mt: 2, mb: 1, px: { xs: 1, sm: 2, md: 3 }, py: 1, borderRadius: 3, bgcolor: themeMode === 'light' ? 'grey.100' : 'grey.900', color: 'text.secondary', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: themeMode === 'light' ? '0 1px 4px rgba(0,0,0,0.04)' : '0 1px 4px rgba(0,0,0,0.18)', transition: 'all 0.3s' }}>
-        <span>字数：{charCount} ｜ 单词：{wordCount} ｜ 行数：{lineCount}</span>
-        <span>快捷键：<b>Ctrl+S</b> 保存，<b>Ctrl+O</b> 打开，<b>Ctrl+B</b> 加粗，<b>Ctrl+I</b> 斜体，<b>Ctrl+L</b> 链接，<b>Ctrl+Shift+P</b> 导出PDF</span>
       </Box>
-    </Container>
-  </ThemeProvider>
-);
+    </ThemeProvider>
+  );
+}
 
 export default App;

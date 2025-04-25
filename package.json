@@ -15,22 +15,31 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.17.1",
     "@mui/material": "^5.13.0",
+    "@types/uuid": "^10.0.0",
+    "@uiw/codemirror-theme-basic": "^4.23.10",
     "@uiw/react-codemirror": "^4.21.3",
+    "axios": "^1.8.4",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
+    "idb": "^8.0.2",
     "jspdf": "^3.0.1",
+    "katex": "^0.16.22",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
+    "rehype-katex": "^7.0.1",
     "rehype-slug": "^6.0.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "socket.io-client": "^4.8.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.0.0",
     "typescript": "^5.0.4",
-    "vite": "^4.3.5"
+    "vite": "^6.3.2"
   }
 }
