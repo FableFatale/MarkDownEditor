@@ -21,6 +21,12 @@ export const createCustomTheme = (settings: ThemeCustomization) => {
         default: mode === 'light' ? '#ffffff' : '#121212',
         paper: mode === 'light' ? '#f5f5f5' : '#1e1e1e',
       },
+      text: {
+        primary: mode === 'light' ? 'rgba(0, 0, 0, 0.87)' : 'rgba(255, 255, 255, 0.87)',
+        secondary: mode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+        disabled: mode === 'light' ? 'rgba(0, 0, 0, 0.38)' : 'rgba(255, 255, 255, 0.38)',
+      },
+      divider: mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)',
     },
     typography: {
       fontFamily: '"-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
@@ -77,6 +83,7 @@ export const createCustomTheme = (settings: ThemeCustomization) => {
           root: {
             backgroundImage: 'none',
             transition: 'all 0.2s ease-in-out',
+            boxShadow: mode === 'dark' ? '0 0 10px rgba(0, 0, 0, 0.5)' : undefined,
           },
         },
       },
@@ -91,8 +98,10 @@ export const createCustomTheme = (settings: ThemeCustomization) => {
         styleOverrides: {
           root: {
             transition: 'all 0.2s ease-in-out',
+            color: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : undefined,
             '&:hover': {
               transform: 'scale(1.1)',
+              color: mode === 'dark' ? 'rgba(255, 255, 255, 0.9)' : undefined,
             },
           },
         },
