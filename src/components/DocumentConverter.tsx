@@ -134,7 +134,9 @@ export const DocumentConverter: React.FC<DocumentConverterProps> = ({ onConvert 
             ? theme.palette.mode === 'dark' 
               ? 'rgba(255, 255, 255, 0.05)' 
               : 'action.hover'
-            : 'background.paper',
+            : theme.palette.mode === 'dark'
+              ? 'rgba(18, 18, 18, 0.5)'
+              : 'background.paper',
           cursor: 'pointer',
           transition: 'all 0.2s ease-in-out',
           '&:hover': {
