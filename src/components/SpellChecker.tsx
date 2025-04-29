@@ -62,26 +62,47 @@ export const SpellChecker: React.FC<SpellCheckerProps> = ({ content, onCorrect }
     localStorage.setItem('customDictionary', JSON.stringify(Array.from(words)));
   }, []);
 
+  // 初始化拼写检查器
+  const [spellChecker, setSpellChecker] = useState<any>(null);
+
+  useEffect(() => {
+    const initSpellChecker = async () => {
+      const SpellChecker = require('simple-spellchecker');
+      SpellChecker.getDictionary('en-US', (err: any, dictionary: any) => {
+        if (!err) {
+          setSpellChecker(dictionary);
+        }
+      });
+    };
+    initSpellChecker();
+  }, []);
+
   // 检查拼写错误
   const checkSpelling = useCallback(async (text: string) => {
-    // TODO: 接入拼写检查API或使用本地词典
-    // 这里使用模拟数据作为示例
-    const mockErrors: SpellingError[] = [];
+    if (!spellChecker) return;
+
+    const errors: SpellingError[] = [];
     const words = text.split(/\s+/);
     
     words.forEach((word, index) => {
-      if (word.length > 2 && !customDictionary.words.has(word.toLowerCase())) {
-        // 模拟拼写检查逻辑
-        const suggestions = [`${word}1`, `${word}2`, `${word}3`];
-        mockErrors.push({
+      // 跳过自定义词典中的单词
+      if (customDictionary.words.has(word.toLowerCase())) {
+        return;
+      }
+
+      // 检查单词拼写
+      const isMisspelled = spellChecker.isMisspelled(word);
+      if (isMisspelled) {
+        const suggestions = spellChecker.getSuggestions(word, 5);
+        errors.push({
           word,
           index: text.indexOf(word),
-          suggestions,
+          suggestions: suggestions.filter((s: string) => s !== word),
         });
       }
     });
 
-    setErrors(mockErrors);
+    setErrors(errors);
   }, [customDictionary.words]);
 
   // 监听内容变化

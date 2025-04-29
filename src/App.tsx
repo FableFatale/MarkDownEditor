@@ -66,44 +66,7 @@ const countWords = (text: string): number => {
   return words ? words.length : 0;
 };
 
-interface AuthButtonsProps {
-  isAuthenticated: boolean;
-  onLogin: () => void;
-  onLogout: () => void;
-}
 
-const AuthButtons: React.FC<AuthButtonsProps> = ({ isAuthenticated, onLogin, onLogout }) => (
-  <Box className="auth-buttons">
-    {isAuthenticated ? (
-      <Button
-        variant="outlined"
-        color="primary"
-        startIcon={<AccountCircle />}
-        onClick={onLogout}
-      >
-        退出登录
-      </Button>
-    ) : (
-      <>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={onLogin}
-        >
-          登录
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Login />}
-          onClick={onLogin}
-        >
-          注册
-        </Button>
-      </>
-    )}
-  </Box>
-);
 
 function App() {
   // 类型定义
@@ -135,7 +98,7 @@ function App() {
   const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
   const [isCoverGeneratorOpen, setIsCoverGeneratorOpen] = useState(false);
   const [isVideoLinkManagerOpen, setIsVideoLinkManagerOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
 
   // 引用和常量
@@ -144,31 +107,7 @@ function App() {
   const drawerWidth = 240;
   const recentFilesOpen = Boolean(recentFilesAnchorEl);
 
-  // 认证相关函数
-  const handleLogin = async () => {
-    try {
-      setIsAuthenticated(true);
-      // 登录成功后加载用户数据
-      await loadOfflineData();
-    } catch (error) {
-      console.error('登录失败:', error);
-      setIsAuthenticated(false);
-    }
-  };
 
-  const handleLogout = async () => {
-    try {
-      setIsAuthenticated(false);
-      // 清理用户相关状态
-      setValue('# 欢迎使用 Markdown 编辑器\n\n这是一个简单的示例文档。您可以开始编写您的内容了！');
-      setCurrentArticleId(null);
-      setCategories([]);
-      setArticles([]);
-      setVersions([]);
-    } catch (error) {
-      console.error('退出登录失败:', error);
-    }
-  };
 
   // 大纲相关函数
   const toggleOutline = () => {
@@ -231,9 +170,11 @@ function App() {
 
   // 自动保存功能
   useEffect(() => {
-    if (!currentArticleId || !isAuthenticated) return;
-
-    const autoSaveTimer = setInterval(() => {
+    if (!currentArticleId) return;
+    
+    let autoSaveTimer: NodeJS.Timeout;
+    
+    const saveCurrentArticle = () => {
       if (currentArticleId && value) {
         const currentArticle = articles.find(a => a.id === currentArticleId);
         if (currentArticle) {
@@ -249,10 +190,18 @@ function App() {
           );
         }
       }
-    }, 30000); // 每30秒自动保存一次
+    };
+    
+    // 立即执行一次保存
+    saveCurrentArticle();
+    
+    // 设置定时器
+    autoSaveTimer = setInterval(saveCurrentArticle, 30000); // 每30秒自动保存一次
 
-    return () => clearInterval(autoSaveTimer);
-  }, [currentArticleId, value, isAuthenticated, articles]);
+    return () => {
+      if (autoSaveTimer) clearInterval(autoSaveTimer);
+    };
+  }, [currentArticleId, value, articles]);
 
   // 数据同步相关函数
   const handleSync = async () => {
@@ -511,22 +460,42 @@ function App() {
             <IconButton onClick={toggleFullScreen}>
               {isFullScreen ? <FullscreenExitRounded /> : <FullscreenRounded />}
             </IconButton>
+            <Tooltip title="导出PDF">
+              <IconButton onClick={async () => {
+                if (!previewRef.current) return;
+                try {
+                  const canvas = await html2canvas(previewRef.current);
+                  const imgData = canvas.toDataURL('image/png');
+                  const pdf = new jsPDF('p', 'mm', 'a4');
+                  const pdfWidth = pdf.internal.pageSize.getWidth();
+                  const pdfHeight = pdf.internal.pageSize.getHeight();
+                  const imgWidth = canvas.width;
+                  const imgHeight = canvas.height;
+                  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                  const imgX = (pdfWidth - imgWidth * ratio) / 2;
+                  const imgY = 0;
+
+                  pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                  pdf.save('markdown-export.pdf');
+                } catch (error) {
+                  console.error('PDF导出失败:', error);
+                }
+              }}>
+                <PictureAsPdfRounded />
+              </IconButton>
+            </Tooltip>
           </Stack>
-          <AuthButtons
-            isAuthenticated={isAuthenticated}
-            onLogin={handleLogin}
-            onLogout={handleLogout}
-          />
+
         </Toolbar>
-        <Box className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`} sx={{ flex: 1, display: 'flex', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
-          <Box className="editor-section" sx={{ flex: 1 }}>
+        <Box className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`} sx={{ flex: 1, display: 'flex', flexDirection: 'row', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', height: 'calc(100vh - 64px)', maxHeight: '900px', position: 'relative', boxShadow: themeMode === 'light' ? '0 2px 12px rgba(0, 0, 0, 0.1)' : '0 2px 12px rgba(0, 0, 0, 0.3)', transition: 'all 0.3s ease-in-out', mx: 'auto', my: 2, maxWidth: '1600px', width: '100%', '&.fullscreen': { maxHeight: '100vh', maxWidth: '100vw', mx: 0, my: 0, borderRadius: 0 } }}>
+          <Box className="editor-section" sx={{ flex: '1 1 50%', borderRight: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`, overflow: 'auto', display: 'flex', flexDirection: 'column', bgcolor: themeMode === 'light' ? '#F8F9FA' : '#1E1E1E', minHeight: '100%', maxHeight: '100%' }}>
             <LargeFileEditor
               content={value}
               onChange={setValue}
               theme={themeMode}
             />
           </Box>
-          <Box className="preview-section markdown-body" sx={{ flex: 1, overflow: 'auto' }}>
+          <Box ref={previewRef} className="preview-section markdown-body" sx={{ flex: '1 1 50%', overflow: 'auto', padding: '20px', bgcolor: themeMode === 'light' ? '#F8F9FA' : '#1E1E1E', borderLeft: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`, minHeight: '100%', maxHeight: '100%', '& img': { maxWidth: '100%', height: 'auto' }, '& pre': { maxWidth: '100%', overflow: 'auto' }, '& table': { display: 'block', width: '100%', overflow: 'auto' }, '& blockquote': { borderLeft: '4px solid', borderLeftColor: themeMode === 'light' ? '#E5E7EB' : '#2D2E32', margin: '1em 0', padding: '0 1em' }, '& > *': { maxWidth: '100%' } }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
               rehypePlugins={[rehypeHighlight, rehypeSlug, rehypeKatex]}

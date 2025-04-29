@@ -1,83 +1,129 @@
 /* 编辑器和预览区域布局 */
 .editor-container {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
-  gap: 24px;
-  height: calc(100vh - 48px);
-  padding: 24px;
+  grid-template-columns: minmax(400px, 1fr) minmax(400px, 1fr);
+  gap: 32px;
+  height: 800px;
+  min-height: 600px;
+  max-height: calc(100vh - 48px);
+  padding: 32px;
   background-color: var(--background-default);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
   isolation: isolate;
-  max-width: 2000px;
+  max-width: 2400px;
   margin: 0 auto;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--container-shadow);
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .editor-section {
   position: relative;
-  border-radius: 12px;
+  border-radius: 20px;
   background-color: var(--background-paper);
   border: 1px solid var(--border-color);
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   min-height: 0;
   height: 100%;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 28px;
+  box-shadow: var(--section-shadow);
+  will-change: transform, box-shadow;
+  cursor: text;
+  outline: none;
+  position: relative;
+  line-height: 1.8;
+  letter-spacing: 0.4px;
+  word-spacing: 1.2px;
+  caret-color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
 }
 
 .editor-section:hover {
   border-color: var(--border-hover-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.editor-section:focus-within {
+  border-color: var(--border-hover-color);
+  box-shadow: var(--focus-ring);
+}
+
+.editor-section::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  color: var(--placeholder-color);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.editor-section:empty::before {
+  opacity: 1;
 }
 
 .preview-section {
   position: relative;
-  border-radius: 12px;
+  border-radius: 20px;
   background-color: var(--background-paper);
   border: 1px solid var(--border-color);
   overflow: auto;
-  padding: 32px 40px;
+  padding: 36px 44px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100%;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   line-height: 1.8;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--section-shadow);
+  will-change: transform, box-shadow;
 }
 
 .preview-section:hover {
   border-color: var(--border-hover-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 /* 滚动条样式 */
 .editor-section::-webkit-scrollbar,
 .preview-section::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .editor-section::-webkit-scrollbar-track,
 .preview-section::-webkit-scrollbar-track {
   background: transparent;
+  margin: 4px;
 }
 
 .editor-section::-webkit-scrollbar-thumb,
 .preview-section::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
 }
 
 .editor-section::-webkit-scrollbar-thumb:hover,
 .preview-section::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* 全屏模式样式 */
@@ -125,57 +171,73 @@
     grid-template-columns: 1fr;
     height: auto;
     min-height: calc(100vh - 48px);
-    padding: 16px;
-    gap: 16px;
+    padding: 20px;
+    gap: 20px;
+    border-radius: 20px;
   }
 
   .editor-section,
   .preview-section {
     height: calc(50vh - 32px);
-    min-height: 300px;
-    padding: 20px;
+    min-height: 320px;
+    padding: 24px;
+    border-radius: 16px;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .editor-section:hover,
+  .preview-section:hover {
+    transform: none;
   }
 }
 
 /* 小屏手机 */
 @media (max-width: 480px) {
   .editor-container {
-    padding: 12px;
-    gap: 12px;
+    padding: 16px;
+    gap: 16px;
+    border-radius: 16px;
   }
 
   .editor-section,
   .preview-section {
     height: calc(50vh - 24px);
-    min-height: 250px;
-    padding: 16px;
-    font-size: 14px;
+    min-height: 280px;
+    padding: 20px;
+    font-size: 15px;
+    border-radius: 14px;
   }
 }
 
 /* CSS变量定义 */
 :root {
   --background-default: #FFFFFF;
-  --background-paper: #F7F8FA;
-  --border-color: #E5E7EB;
-  --border-hover-color: #D1D5DB;
-  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
-  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+  --background-paper: rgba(247, 248, 250, 0.8);
+  --border-color: rgba(229, 231, 235, 0.6);
+  --border-hover-color: rgba(209, 213, 219, 0.8);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
   --text-primary: rgba(0, 0, 0, 0.87);
   --text-secondary: rgba(0, 0, 0, 0.6);
+  --container-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --section-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --focus-ring: 0 0 0 2px rgba(66, 153, 225, 0.6);
+  --placeholder-color: rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] {
   --background-default: #1A1B1E;
-  --background-paper: #27282B;
-  --border-color: #2D2E32;
-  --border-hover-color: #3D3E42;
+  --background-paper: rgba(39, 40, 43, 0.8);
+  --focus-ring: 0 0 0 2px rgba(66, 153, 225, 0.4);
+  --placeholder-color: rgba(255, 255, 255, 0.35);
+  --border-color: rgba(45, 46, 50, 0.6);
+  --border-hover-color: rgba(61, 62, 66, 0.8);
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
   --text-primary: rgba(255, 255, 255, 0.92);
   --text-secondary: rgba(255, 255, 255, 0.7);
-  --shadow-color: rgba(0, 0, 0, 0.4);
-  --hover-shadow-color: rgba(0, 0, 0, 0.5);
+  --container-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --section-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Basic Markdown Styles */

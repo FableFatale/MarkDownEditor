@@ -1,0 +1,85 @@
+.toolbar {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease-in-out;
+  z-index: 1000;
+  border-bottom: 1px solid var(--divider-color);
+  background-color: var(--toolbar-background);
+}
+
+.toolbar-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.word-counter {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background-color: var(--paper-background);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.word-counter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+  background-color: var(--paper-background-hover);
+}
+
+.word-counter-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.word-counter-item svg {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .toolbar-content {
+    padding: 0 16px;
+    height: 48px;
+  }
+
+  .word-counter {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    gap: 16px;
+  }
+
+  .word-counter-item svg {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar-content {
+    padding: 0 12px;
+    height: 44px;
+  }
+
+  .word-counter {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    gap: 12px;
+  }
+
+  .word-counter-item svg {
+    font-size: 0.75rem;
+  }
+}
