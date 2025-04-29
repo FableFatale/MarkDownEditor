@@ -1,5 +1,6 @@
 import React from 'react';
-import { AppBar, Box, useTheme } from '@mui/material';
+import { AppBar, Box, Container, useTheme } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import WordCounter from './WordCounter';
 
 interface ToolbarProps {
