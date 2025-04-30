@@ -1,4 +1,57 @@
-主要功能：
+🏗️ 1. 编辑器功能相关（基础+扩展）
+
+功能	技术选型	备注
+Markdown 编辑器内核	CodeMirror 6（+ @codemirror/lang-markdown）	支持大文件、扩展性好
+语法高亮	@codemirror/highlight + 自定义 HighlightStyle	轻量精准，支持自定义
+快捷键支持	@codemirror/commands + 自定义快捷键映射	完整支持你的快捷键清单
+图片上传	react-dropzone + 自定义 Upload API	支持拖拽、粘贴上传
+动图支持	使用支持 WebP/APNG 的渲染器	兼容动图展示
+文字转 Markdown	Turndown.js	把 HTML/纯文本自动转为 Markdown
+导出 PDF	html2pdf.js（简易版） 或 puppeteer（复杂版，Node 后端）	看你是否需要生成高质量的 PDF
+多格式导出	使用 showdown.js 转 HTML，jszip 封装 Word/Zip 等格式	方便一键打包
+页面划分图片生成	html2canvas + 自定义 Canvas Layout	2.35:1 比例封面图生成
+📖 2. 预览与渲染相关（体验）
+
+功能	技术选型	备注
+Markdown 渲染	react-markdown	
+GFM 支持（表格、任务列表）	remark-gfm	
+数学公式	remark-math + rehype-katex	
+Mermaid 流程图	mermaid-js/mermaid + React Wrapper	
+自定义标题样式	Tailwind 自定义组件 or rehype plugins	
+SEO优化（字数、关键词）	动态 meta 生成 + 字数统计函数	
+字数统计	实时监听 Markdown 文本，统计文字数量
+🗂️ 3. 内容管理与扩展
+
+功能	技术选型	备注
+文章分类、管理	Zustand / Jotai 管理状态，结合 IndexedDB 持久化	
+多端同步	Firebase / Supabase（推荐轻量同步）	
+历史版本管理	基于 localForage 保存版本快照	
+协作编辑	Yjs + WebRTC / WebSocket	
+主题切换	Tailwind + ThemeContext	
+图片管理	AWS S3 / 自建 OSS，或者本地 IndexedDB，目前先实现本地
+功能	技术选型	备注
+样式系统	TailwindCSS 3+（CDN版可）	
+深浅模式切换	Tailwind dark: 机制	
+组件	Headless UI +自定义 Tailwind Components	
+图标	Heroicons / Lucide Icons（比 FontAwesome 更轻）	
+微交互	framer-motion（动效库，极轻巧）	
+响应式布局	Tailwind Flex/Grid 体系，完美支持手机平板	
+全屏/专注模式	Tailwind 自定义布局 + screenfull.js（全屏切换库）	
+自定义主题	Tailwind config.js 动态切换颜色、字体	
+多种布局	自定义 Editor、Preview 分栏，支持调整大小（react-resizable）
+
+🚀 5. 性能与优化
+
+功能	技术选型	备注
+大文件优化	CodeMirror 流式编辑机制	
+离线编辑	PWA（Progressive Web App）支持	
+内容懒加载	react-lazyload / Intersection Observer API	
+图片压缩优化	browser-image-compression	
+资源压缩	vite-plugin-compression（gzip压缩打包）	
+自动保存备份	useDebounce + LocalForage	
+拼写检查	simple-peer spelling.js / 浏览器内置检查	
+
+<!-- 主要功能：
          1.  实现Markdown的语法高亮 
          2.  实现Markdown的导出为PDF
          3.  自定义markdown渲染后的标题样式
@@ -101,5 +154,36 @@
              - 拼写检查
              - 自动保存和备份
              - 导入导出进度提示
-             - 根据文字可以切分为多张图片、适配小红书、微信文字界面的图片/文字功能
+             - 根据文字可以切分为多张图片、适配小红书、微信文字界面的图片/文字功能 -->
+## 技术栈
+🖥️ 前端 (Vite + React + TypeScript)
+│
+├── 编辑器区（Editor）
+│   ├── CodeMirror 6 核心
+│   ├── 快捷键支持（@codemirror/commands）
+│   ├── 自动补全（@codemirror/autocomplete）
+│   ├── 滚动同步逻辑（scroll event listener）
+│
+├── 预览器区（Preview）
+│   ├── React Markdown
+│   ├── remark-gfm（表格、任务列表）
+│   ├── rehype-highlight（代码块高亮）
+│   ├── remark-math + rehype-katex（数学公式）
+│   ├── remark-toc（目录生成）
+│
+├── 状态管理区（State）
+│   ├── Zustand / Jotai（管理编辑内容、主题模式）
+│
+├── 持久化存储区（Persistence）
+│   ├── localForage（自动保存草稿，多版本备份）
+│
+├── UI 界面（UI）
+│   ├── Tailwind CSS（统一主题）
+│   ├── Headless UI（对话框、菜单等）
+│   ├── ThemeContext（暗黑/亮色切换）
+│   ├── Heroicons / Lucide（图标）
+│
+└── 工具支持（Utilities）
+    ├── lodash.debounce（输入防抖自动保存）
+    ├── 自定义 Hook（如 useMarkdownEditor、useScrollSync）
              

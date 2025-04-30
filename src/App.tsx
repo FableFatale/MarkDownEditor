@@ -1,7 +1,11 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, Component, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+// 导入类型定义
 import { Category, Article } from './types/article';
 import { Version } from './types/version';
+import { CollaborationUser, CollaborationState, TextOperation } from './types/collaboration';
+
+// 导入组件
 import { CategoryManager } from './components/CategoryManager';
 import { ArticleManager } from './components/ArticleManager';
 import { ImageUploader } from './components/ImageUploader';
@@ -9,14 +13,44 @@ import { VersionManager } from './components/VersionManager';
 import { CoverGenerator } from './components/CoverGenerator';
 import { VideoLinkManager } from './components/VideoLinkManager';
 import { AuthManager } from './components/AuthManager';
+import { LargeFileEditor } from './components/LargeFileEditor';
+import { Toolbar } from './components/Toolbar';
+
+// 导入服务
 import { syncService } from './services/syncService';
 import { versionService } from './services/versionService';
 import { collaborationService } from './services/collaborationService';
 import { offlineService } from './services/offlineService';
-import { CollaborationUser, CollaborationState, TextOperation } from './types/collaboration';
-import { LargeFileEditor } from './components/LargeFileEditor';
+
+// 导入Material UI相关组件和工具
 import { ThemeProvider, createTheme, PaletteMode } from '@mui/material/styles';
-import { Container, Box, CssBaseline, Grid, Paper, Button, Toolbar, IconButton, Stack, Divider, Tooltip, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItemButton, Drawer, alpha } from '@mui/material';
+import { 
+  Container, 
+  Box, 
+  CssBaseline, 
+  Grid, 
+  Paper, 
+  Button, 
+  IconButton, 
+  Stack, 
+  Divider, 
+  Tooltip, 
+  Typography, 
+  Menu, 
+  MenuItem, 
+  ListItemIcon, 
+  ListItemText, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  List, 
+  ListItemButton, 
+  Drawer, 
+  alpha, 
+  CircularProgress, 
+  Alert 
+} from '@mui/material';
 import { AccountCircle, Login } from '@mui/icons-material';
 import {
   FormatBold,
@@ -75,6 +109,10 @@ function App() {
     text: string;
     level: number;
   }
+
+  // 加载状态管理
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   // 状态管理
   const [value, setValue] = useState('# 欢迎使用 Markdown 编辑器\n\n这是一个简单的示例文档。您可以开始编写您的内容了！');
@@ -242,8 +280,36 @@ function App() {
 
   // 主题切换
   const toggleTheme = () => {
-    setThemeMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    const newMode = themeMode === 'light' ? 'dark' : 'light';
+    setThemeMode(newMode);
+    localStorage.setItem('theme-mode', newMode);
+    // 触发主题切换动画
+    document.documentElement.style.transition = 'background-color 0.3s ease-in-out';
+    document.documentElement.style.backgroundColor = 
+      newMode === 'light' ? theme.palette.background.default : theme.palette.background.paper;
   };
+
+  // 初始化主题
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme-mode') as PaletteMode | null;
+    if (savedTheme) {
+      setThemeMode(savedTheme);
+    } else {
+      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setThemeMode(prefersDarkMode ? 'dark' : 'light');
+    }
+
+    // 监听系统主题变化
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleThemeChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme-mode')) {
+        setThemeMode(e.matches ? 'dark' : 'light');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleThemeChange);
+  }, []);
 
   // 全屏切换
   const toggleFullScreen = () => {
@@ -286,7 +352,8 @@ function App() {
   const handleCoverSave = (coverUrl: string) => {
     const coverMarkdown = `![封面图](${coverUrl})`;
     if (editorRef.current?.view) {
-      const view = editorRef.current.view;
+      // 确保 editorRef.current 存在且具有 view 属性
+      const view = (editorRef.current as any)?.view;
       const pos = view.state.selection.main.head;
       view.dispatch({
         changes: { from: pos, insert: coverMarkdown + '\n' }
@@ -321,6 +388,27 @@ function App() {
           background: {
             default: themeMode === 'light' ? '#FFFFFF' : '#1A1B1E',
             paper: themeMode === 'light' ? '#F7F8FA' : '#27282B',
+          },
+          text: {
+            primary: themeMode === 'light' ? 'rgba(0, 0, 0, 0.87)' : 'rgba(255, 255, 255, 0.87)',
+            secondary: themeMode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+          },
+        },
+        transitions: {
+          duration: {
+            shortest: 150,
+            shorter: 200,
+            short: 250,
+            standard: 300,
+            complex: 375,
+            enteringScreen: 225,
+            leavingScreen: 195,
+          },
+          easing: {
+            easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
+            easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+            sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
           },
         },
         components: {
@@ -448,45 +536,68 @@ function App() {
     [themeMode, isFullScreen],
   );
 
+  // 初始化数据加载
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        setIsLoading(true);
+        // 这里可以添加其他初始化逻辑
+        const savedTheme = localStorage.getItem('theme-mode') as PaletteMode | null;
+        if (savedTheme) {
+          setThemeMode(savedTheme);
+        } else {
+          const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          setThemeMode(prefersDarkMode ? 'dark' : 'light');
+        }
+      } catch (error) {
+        setLoadingError(error instanceof Error ? error.message : '初始化失败');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          bgcolor: theme.palette.background.default
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (loadingError) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          bgcolor: theme.palette.background.default
+        }}
+      >
+        <Alert severity="error" sx={{ maxWidth: 400 }}>
+          {loadingError}
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-        <Toolbar variant="dense" sx={{ minHeight: 48 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton onClick={toggleTheme}>
-              {themeMode === 'light' ? <DarkMode /> : <LightMode />}
-            </IconButton>
-            <IconButton onClick={toggleFullScreen}>
-              {isFullScreen ? <FullscreenExitRounded /> : <FullscreenRounded />}
-            </IconButton>
-            <Tooltip title="导出PDF">
-              <IconButton onClick={async () => {
-                if (!previewRef.current) return;
-                try {
-                  const canvas = await html2canvas(previewRef.current);
-                  const imgData = canvas.toDataURL('image/png');
-                  const pdf = new jsPDF('p', 'mm', 'a4');
-                  const pdfWidth = pdf.internal.pageSize.getWidth();
-                  const pdfHeight = pdf.internal.pageSize.getHeight();
-                  const imgWidth = canvas.width;
-                  const imgHeight = canvas.height;
-                  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                  const imgX = (pdfWidth - imgWidth * ratio) / 2;
-                  const imgY = 0;
-
-                  pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-                  pdf.save('markdown-export.pdf');
-                } catch (error) {
-                  console.error('PDF导出失败:', error);
-                }
-              }}>
-                <PictureAsPdfRounded />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-
-        </Toolbar>
+        <Toolbar content={value} />
         <Box className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`} sx={{ flex: 1, display: 'flex', flexDirection: 'row', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', height: 'calc(100vh - 64px)', maxHeight: '900px', position: 'relative', boxShadow: themeMode === 'light' ? '0 2px 12px rgba(0, 0, 0, 0.1)' : '0 2px 12px rgba(0, 0, 0, 0.3)', transition: 'all 0.3s ease-in-out', mx: 'auto', my: 2, maxWidth: '1600px', width: '100%', '&.fullscreen': { maxHeight: '100vh', maxWidth: '100vw', mx: 0, my: 0, borderRadius: 0 } }}>
           <Box className="editor-section" sx={{ flex: '1 1 50%', borderRight: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`, overflow: 'auto', display: 'flex', flexDirection: 'column', bgcolor: themeMode === 'light' ? '#F8F9FA' : '#1E1E1E', minHeight: '100%', maxHeight: '100%' }}>
             <LargeFileEditor
@@ -509,4 +620,64 @@ function App() {
   );
 }
 
-export default App;
+// 错误边界组件
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('错误边界捕获到错误:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            padding: 3,
+            bgcolor: 'background.default'
+          }}
+        >
+          <Alert
+            severity="error"
+            sx={{
+              maxWidth: 600,
+              width: '100%',
+              mb: 2
+            }}
+          >
+            应用程序遇到了问题
+          </Alert>
+          <Button
+            variant="contained"
+            onClick={() => window.location.reload()}
+          >
+            刷新页面
+          </Button>
+        </Box>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 包装App组件
+const AppWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
+
+export default AppWithErrorBoundary;

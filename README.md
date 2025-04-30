@@ -35,10 +35,33 @@
 - ⌛ 大文件编辑支持
 
 ## 技术栈
-- React + TypeScript
-- Vite
-- Material-UI
-- CodeMirror 6
-- React Markdown
-- Tailwind CSS
-- LocalStorage for data persistence
+🖥️ 前端 (Vite + React + TypeScript)
+│
+├── 编辑器区（Editor）
+│   ├── CodeMirror 6 核心
+│   ├── 快捷键支持（@codemirror/commands）
+│   ├── 自动补全（@codemirror/autocomplete）
+│   ├── 滚动同步逻辑（scroll event listener）
+│
+├── 预览器区（Preview）
+│   ├── React Markdown
+│   ├── remark-gfm（表格、任务列表）
+│   ├── rehype-highlight（代码块高亮）
+│   ├── remark-math + rehype-katex（数学公式）
+│   ├── remark-toc（目录生成）
+│
+├── 状态管理区（State）
+│   ├── Zustand / Jotai（管理编辑内容、主题模式）
+│
+├── 持久化存储区（Persistence）
+│   ├── localForage（自动保存草稿，多版本备份）
+│
+├── UI 界面（UI）
+│   ├── Tailwind CSS（统一主题）
+│   ├── Headless UI（对话框、菜单等）
+│   ├── ThemeContext（暗黑/亮色切换）
+│   ├── Heroicons / Lucide（图标）
+│
+└── 工具支持（Utilities）
+    ├── lodash.debounce（输入防抖自动保存）
+    ├── 自定义 Hook（如 useMarkdownEditor、useScrollSync）
