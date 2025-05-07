@@ -1,40 +1,89 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { MarkdownEditorCore } from './MarkdownEditorCore';
 import { MarkdownPreview } from './MarkdownPreview';
 import { Resizable } from 'react-resizable';
 import WordCounter from '../WordCounter';
 import PdfExporter from '../PdfExporter';
-import { Box, Divider, useTheme } from '@mui/material';
+import { Box, Divider, useTheme, CircularProgress, Typography, LinearProgress, FormControl, InputLabel, Select, MenuItem, Tooltip } from '@mui/material';
+import { LargeFileEditor } from '../LargeFileEditor';
+import { MarkdownEditor } from '../MarkdownEditor';
+import debounce from 'lodash.debounce';
 import 'react-resizable/css/styles.css';
+import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
 
 interface MarkdownEditorContainerProps {
   initialValue?: string;
   className?: string;
   onContentChange?: (content: string) => void;
+  largeFileThreshold?: number; // Size threshold in characters to use large file editor
 }
 
 export const MarkdownEditorContainer = ({
   initialValue = '',
   className = '',
   onContentChange,
+  largeFileThreshold = 100000, // Default to 100KB (approximately 100,000 characters)
 }: MarkdownEditorContainerProps) => {
   const theme = useTheme();
   const [content, setContent] = useState(initialValue);
-  const [editorWidth, setEditorWidth] = useState(window.innerWidth / 2);
+  const [previewContent, setPreviewContent] = useState(initialValue);
+  const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.4); // 初始编辑器宽度设为40%，给预览区域留出更多空间
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPreviewUpdating, setIsPreviewUpdating] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [headingStyle, setHeadingStyle] = useState<string>('default');
   const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Determine if we should use the large file editor based on content size
+  const isLargeFile = useMemo(() => {
+    return initialValue.length > largeFileThreshold;
+  }, [initialValue.length, largeFileThreshold]);
 
-  // 处理内容变化
-  const handleContentChange = (newContent: string) => {
-    setContent(newContent);
-    onContentChange?.(newContent);
-  };
+  // 处理内容变化 - 使用debounce优化大文件性能
+  const handleContentChange = useMemo(
+    () =>
+      debounce((newContent: string) => {
+        setContent(newContent);
+        onContentChange?.(newContent);
+        
+        // 对于大文件，延迟更新预览内容以提高性能
+        if (isLargeFile) {
+          setIsPreviewUpdating(true);
+          setTimeout(() => {
+            setPreviewContent(newContent);
+            setIsPreviewUpdating(false);
+          }, 1000); // 1秒后更新预览，减少频繁渲染
+        } else {
+          setPreviewContent(newContent);
+        }
+      }, 300),
+    [onContentChange, isLargeFile]
+  );
+  
+  // 处理加载状态变化
+  const handleLoadingStateChange = useCallback((loading: boolean) => {
+    setIsLoading(loading);
+  }, []);
+  
+  // 切换暗黑模式
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => !prev);
+  }, []);
+  
+  // 清理debounce函数
+  useEffect(() => {
+    return () => {
+      handleContentChange.cancel();
+    };
+  }, [handleContentChange]);
 
   // 处理窗口大小变化
   useEffect(() => {
     const handleResize = () => {
-      // 确保编辑器宽度不超过窗口宽度的80%
-      if (editorWidth > window.innerWidth * 0.8) {
-        setEditorWidth(window.innerWidth * 0.5);
+      // 确保编辑器宽度在窗口调整时保持合理比例，给预览区域留出足够空间
+      const maxAllowedWidth = window.innerWidth * 0.7;
+      if (editorWidth > maxAllowedWidth) {
+        setEditorWidth(window.innerWidth * 0.4); // 重置为默认40%宽度
       }
     };
 
@@ -46,7 +95,7 @@ export const MarkdownEditorContainer = ({
   const handleResize = (_: any, { size }: { size: { width: number } }) => {
     // 限制最小宽度和最大宽度
     const minWidth = 300;
-    const maxWidth = window.innerWidth * 0.8;
+    const maxWidth = window.innerWidth * 0.7; // 允许编辑器占据更大空间，但仍保留足够的预览区域
 
     let newWidth = size.width;
     if (newWidth < minWidth) newWidth = minWidth;
@@ -56,7 +105,21 @@ export const MarkdownEditorContainer = ({
   };
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
+      {/* 加载状态指示器 */}
+      {isLoading && (
+        <LinearProgress 
+          sx={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            height: 2, 
+            zIndex: 9999 
+          }} 
+        />
+      )}
+      
       {/* 工具栏 */}
       <Box
         sx={{
@@ -66,56 +129,207 @@ export const MarkdownEditorContainer = ({
           p: 1,
           borderBottom: `1px solid ${theme.palette.divider}`,
           bgcolor: theme.palette.background.paper,
+          flexShrink: 0, // 防止工具栏被压缩
         }}
       >
-        <WordCounter text={content} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <WordCounter text={content} />
+          {isLargeFile && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: theme.palette.warning.main,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                backgroundColor: theme.palette.warning.light + '20',
+              }}
+            >
+              Large File Mode ({(initialValue.length / 1024).toFixed(1)} KB)
+            </Typography>
+          )}
+        </Box>
         <PdfExporter contentRef={previewRef} fileName="markdown-document.pdf" />
       </Box>
 
-      {/* 编辑器和预览区 */}
-      <div className="flex flex-1 overflow-hidden">
-        <Resizable
-          width={editorWidth}
-          height={0} // 高度由容器控制
-          onResize={handleResize}
-          handle={
-            <div
-              className="w-2 h-full cursor-col-resize"
-              style={{
-                backgroundColor: theme.palette.divider,
-                transition: 'background-color 0.2s',
-                '&:hover': {
-                  backgroundColor: theme.palette.primary.light,
-                }
-              }}
-            />
-          }
-          axis="x"
-        >
-          <div style={{ width: editorWidth }} className="h-full">
-            <MarkdownEditorCore
-              initialValue={initialValue}
-              onChange={handleContentChange}
-              className="h-full p-4"
-              style={{
-                backgroundColor: theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
-                color: theme.palette.text.primary,
-              }}
-            />
-          </div>
-        </Resizable>
+      {/* 编辑器和预览区 - 水平并列布局 */}
+      <Box sx={{ display: 'flex', flexDirection: 'row', flex: 1, width: '100%', overflow: 'hidden' }}>
+        {/* 编辑器区域 */}
+        <Box sx={{ width: editorWidth, height: '100%', position: 'relative' }}>
+          <Resizable
+            width={editorWidth}
+            height={0}
+            onResize={handleResize}
+            handle={
+              <div
+                style={{
+                  width: '8px',
+                  height: '100%',
+                  cursor: 'col-resize',
+                  backgroundColor: theme.palette.divider,
+                  position: 'absolute',
+                  right: '-4px',
+                  top: 0,
+                  bottom: 0,
+                  zIndex: 10,
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.palette.primary.light;
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.palette.divider;
+                }}
+              />
+            }
+            axis="x"
+          >
+            <Box sx={{ width: editorWidth, height: '100%', position: 'relative' }}>
+              {isLoading && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 10,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    padding: 3,
+                    borderRadius: 2,
+                  }}
+                >
+                  <CircularProgress color="primary" />
+                  <Box sx={{ color: 'white' }}>Loading large file...</Box>
+                </Box>
+              )}
+              <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <MarkdownEditor
+                  content={content}
+                  onChange={handleContentChange}
+                  isDarkMode={isDarkMode}
+                  onToggleTheme={toggleDarkMode}
+                  largeFileThreshold={largeFileThreshold}
+                  onLoadingStateChange={handleLoadingStateChange}
+                />
+              </Box>
+            </Box>
+          </Resizable>
+        </Box>
 
-        <div
+        {/* 预览区域 */}
+        <Box
           ref={previewRef}
-          className="flex-1 h-full overflow-auto p-4"
-          style={{
+          sx={{
+            flex: 1,
+            height: '100%',
+            overflow: 'auto',
+            padding: 3,
             backgroundColor: theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
             borderLeft: `1px solid ${theme.palette.divider}`,
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <MarkdownPreview content={content} showStyleControls={true} />
-        </div>
-      </div>
-    </div>
+          <Box sx={{ 
+              mb: 2,
+              display: 'flex', 
+              flexDirection: 'column',
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              pb: 2
+            }}>
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                mb: 1, 
+                fontWeight: 'medium',
+                color: theme.palette.text.secondary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <span>预览区域</span>
+              {isLoading && (
+                <CircularProgress 
+                  size={20} 
+                  thickness={4}
+                  sx={{ opacity: 0.7 }} 
+                />
+              )}
+            </Typography>
+            
+            {/* 标题样式选择器 - 移动到预览区域内部 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                <FormatColorTextIcon sx={{ mr: 1, color: theme.palette.primary.main, fontSize: '1.2rem' }} />
+                <Typography variant="subtitle2" fontWeight="medium">标题样式设置</Typography>
+              </Box>
+              
+              <Tooltip title="选择不同的标题样式，立即在预览区查看效果">
+                <FormControl size="small" variant="outlined" sx={{ minWidth: 180 }}>
+                  <InputLabel>标题样式</InputLabel>
+                  <Select
+                    value={headingStyle}
+                    onChange={(e) => setHeadingStyle(e.target.value)}
+                    label="标题样式"
+                  >
+                    <MenuItem value="default">默认样式</MenuItem>
+                    <MenuItem value="underline">下划线样式</MenuItem>
+                    <MenuItem value="bordered">边框样式</MenuItem>
+                    <MenuItem value="gradient">渐变样式</MenuItem>
+                    <MenuItem value="modern">现代样式</MenuItem>
+                    <MenuItem value="elegant">优雅样式</MenuItem>
+                  </Select>
+                </FormControl>
+              </Tooltip>
+            </Box>
+          </Box>
+
+          {(isLargeFile && (isLoading || isPreviewUpdating)) ? (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                gap: 2,
+              }}
+            >
+              <CircularProgress size={40} thickness={4} />
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                {isLoading ? 'Loading content...' : 'Rendering preview...'}
+                {isLargeFile && (
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Large file processing may take longer
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
+          ) : (
+            <Box 
+              sx={{ 
+                flexGrow: 1,
+                opacity: isLoading ? 0.6 : 1, 
+                transition: 'opacity 0.3s ease',
+                overflowY: 'auto',
+                width: '100%' // 确保内容宽度充分利用可用空间
+              }}
+            >
+              <MarkdownPreview content={previewContent} showStyleControls={false} headingStyle={headingStyle} />
+            </Box>
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 };

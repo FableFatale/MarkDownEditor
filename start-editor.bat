@@ -1,0 +1,3 @@
+@echo off
+echo 正在启动Markdown编辑器...
+npm run dev -- --open=http://localhost:5173/

@@ -1,28 +1,68 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
+// 保留测试组件以备需要
+import TestComponent from './TestComponent'
+// 恢复MarkdownEditorApp
+import MarkdownEditorApp from './MarkdownEditorApp'
+// 导入简单版Markdown编辑器
+import SimpleMarkdownEditor from './SimpleMarkdownEditor'
+// 导入基础版Markdown编辑器
+import BasicEditor from './BasicEditor'
+
+// 直接导入CSS文件
 import './markdown-styles.css'
-import './modern-fonts.css' // 引入现代字体样式
+import './modern-fonts.css'
+import './katex-styles.css'
 
-// 添加全局样式以实现平滑过渡效果
-const style = document.createElement('style')
-style.textContent = `
-  * {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  button, a {
-    transition: all 0.2s ease-in-out;
-  }
-  
-  button:hover, a:hover {
-    transform: translateY(-2px);
-  }
-`
-document.head.appendChild(style)
+// 使用新版本的ReactDOM.createRoot方法
+const rootElement = document.getElementById('root')
+if (rootElement) {
+  try {
+    // 清除后备内容
+    rootElement.innerHTML = ''
+    const root = ReactDOM.createRoot(rootElement)
+    // 使用条件渲染，根据URL参数决定显示哪个组件
+    const urlParams = new URLSearchParams(window.location.search);
+    const showTest = urlParams.has('test');
+    const showSimple = urlParams.has('simple');
+    const showBasic = urlParams.has('basic');
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+    // 默认显示MarkdownEditorApp
+    let componentToRender = <MarkdownEditorApp />;
+
+    // 根据URL参数决定显示哪个组件
+    if (showTest) {
+      componentToRender = <TestComponent />;
+    } else if (showSimple) {
+      componentToRender = <SimpleMarkdownEditor />;
+    } else if (showBasic) {
+      componentToRender = <BasicEditor />;
+    }
+
+    // 打印当前渲染的组件类型，用于调试
+    console.log('当前渲染组件:',
+      showTest ? 'TestComponent' :
+      showSimple ? 'SimpleMarkdownEditor' :
+      showBasic ? 'BasicEditor' :
+      'MarkdownEditorApp'
+    );
+
+    root.render(
+      <React.StrictMode>
+        {componentToRender}
+      </React.StrictMode>
+    )
+    console.log('React应用已成功渲染')
+  } catch (error) {
+    console.error('React应用渲染失败:', error)
+    // 显示错误信息
+    rootElement.innerHTML = `
+      <div style="padding: 20px; max-width: 800px; margin: 0 auto; font-family: sans-serif;">
+        <h1 style="color: #d32f2f;">渲染错误</h1>
+        <p>应用程序渲染时发生错误。请查看控制台获取更多信息。</p>
+        <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto;">${error}</pre>
+        <button onclick="location.reload()" style="padding: 8px 16px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">刷新页面</button>
+      </div>
+    `
+  }
+}

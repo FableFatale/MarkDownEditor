@@ -4,27 +4,33 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
-import 'katex/dist/katex.min.css';
+import '../../katex-styles.css';
 import { createCustomHeadingRenderer, HeadingStyleType } from '../CustomHeadingStyles';
-import { Box, FormControl, InputLabel, Select, MenuItem, useTheme } from '@mui/material';
+import { Box, FormControl, InputLabel, Select, MenuItem, useTheme, Typography, Divider, Tooltip } from '@mui/material';
+import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
 
 interface MarkdownPreviewProps {
   content: string;
   className?: string;
   showStyleControls?: boolean;
+  headingStyle?: HeadingStyleType;
 }
 
 export const MarkdownPreview = ({
   content,
   className = '',
-  showStyleControls = false
+  showStyleControls = false,
+  headingStyle = 'default'
 }: MarkdownPreviewProps) => {
   const theme = useTheme();
-  const [headingStyle, setHeadingStyle] = useState<HeadingStyleType>('default');
+  const [internalHeadingStyle, setInternalHeadingStyle] = useState<HeadingStyleType>('default');
+  
+  // 使用外部传入的headingStyle或内部状态
+  const effectiveHeadingStyle = showStyleControls ? internalHeadingStyle : headingStyle;
 
   // 自定义组件
   const components = {
-    ...createCustomHeadingRenderer(headingStyle),
+    ...createCustomHeadingRenderer(effectiveHeadingStyle),
     a: ({ node, ...props }: any) => (
       <a
         className="text-blue-500 hover:text-blue-600 underline"
@@ -74,23 +80,40 @@ export const MarkdownPreview = ({
   return (
     <div className={`prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none ${className}`}>
       {showStyleControls && (
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <FormControl size="small" variant="outlined" sx={{ minWidth: 150 }}>
-            <InputLabel>标题样式</InputLabel>
-            <Select
-              value={headingStyle}
-              onChange={(e) => setHeadingStyle(e.target.value as HeadingStyleType)}
-              label="标题样式"
-            >
-              <MenuItem value="default">默认样式</MenuItem>
-              <MenuItem value="underline">下划线样式</MenuItem>
-              <MenuItem value="bordered">边框样式</MenuItem>
-              <MenuItem value="gradient">渐变样式</MenuItem>
-              <MenuItem value="modern">现代样式</MenuItem>
-              <MenuItem value="elegant">优雅样式</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+        <>
+          <Box sx={{ 
+            mb: 3, 
+            display: 'flex', 
+            flexDirection: 'column',
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            pb: 2
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+              <FormatColorTextIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+              <Typography variant="subtitle1" fontWeight="medium">标题样式设置</Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip title="选择不同的标题样式，立即在预览区查看效果">
+                <FormControl size="small" variant="outlined" sx={{ minWidth: 180 }}>
+                  <InputLabel>标题样式</InputLabel>
+                  <Select
+                    value={internalHeadingStyle}
+                    onChange={(e) => setInternalHeadingStyle(e.target.value as HeadingStyleType)}
+                    label="标题样式"
+                  >
+                    <MenuItem value="default">默认样式</MenuItem>
+                    <MenuItem value="underline">下划线样式</MenuItem>
+                    <MenuItem value="bordered">边框样式</MenuItem>
+                    <MenuItem value="gradient">渐变样式</MenuItem>
+                    <MenuItem value="modern">现代样式</MenuItem>
+                    <MenuItem value="elegant">优雅样式</MenuItem>
+                  </Select>
+                </FormControl>
+              </Tooltip>
+            </Box>
+          </Box>
+        </>
       )}
 
       <ReactMarkdown

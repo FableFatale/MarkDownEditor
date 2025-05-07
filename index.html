@@ -4,19 +4,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Markdown编辑器</title>
+    <!-- 直接加载字体，避免使用CSS中的@import规则 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap">
+    <!-- 预加载KaTeX字体 -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
     <style>
       html, body {
         margin: 0;
         padding: 0;
         height: 100%;
+        font-family: Arial, sans-serif;
       }
       #root {
         height: 100%;
       }
+      .fallback {
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-top: 50px;
+        text-align: center;
+      }
+      .fallback h1 {
+        color: #333;
+        font-size: 24px;
+      }
+      .fallback p {
+        color: #666;
+        margin-bottom: 20px;
+      }
+      .fallback button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+      }
+      .fallback button:hover {
+        background-color: #45a049;
+      }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- 后备内容，如果React没有渲染，这个内容会显示 -->
+      <div class="fallback">
+        <h1>Markdown编辑器</h1>
+        <p>如果您看到此内容，说明React应用没有正确加载。</p>
+        <button onclick="location.reload()">刷新页面</button>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

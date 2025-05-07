@@ -1,6 +1,6 @@
 /* Modern Font Imports */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+/* 注意：我们不再使用@import规则，而是在index.html中使用link标签 */
+/* 这些字体将通过index.html中的link标签加载 */
 
 /* Font Variables */
 :root {

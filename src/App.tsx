@@ -14,7 +14,8 @@ import { CoverGenerator } from './components/CoverGenerator';
 import { VideoLinkManager } from './components/VideoLinkManager';
 import { AuthManager } from './components/AuthManager';
 import { LargeFileEditor } from './components/LargeFileEditor';
-import { Toolbar } from './components/Toolbar';
+import Toolbar from './components/Toolbar';
+import { MarkdownEditorContainer } from './components/editor/MarkdownEditorContainer';
 
 // 导入服务
 import { syncService } from './services/syncService';
@@ -23,33 +24,33 @@ import { collaborationService } from './services/collaborationService';
 import { offlineService } from './services/offlineService';
 
 // 导入Material UI相关组件和工具
-import { ThemeProvider, createTheme, PaletteMode } from '@mui/material/styles';
-import { 
-  Container, 
-  Box, 
-  CssBaseline, 
-  Grid, 
-  Paper, 
-  Button, 
-  IconButton, 
-  Stack, 
-  Divider, 
-  Tooltip, 
-  Typography, 
-  Menu, 
-  MenuItem, 
-  ListItemIcon, 
-  ListItemText, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  List, 
-  ListItemButton, 
-  Drawer, 
-  alpha, 
-  CircularProgress, 
-  Alert 
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import {
+  Container,
+  Box,
+  CssBaseline,
+  Grid,
+  Paper,
+  Button,
+  IconButton,
+  Stack,
+  Divider,
+  Tooltip,
+  Typography,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItemButton,
+  Drawer,
+  alpha,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { AccountCircle, Login } from '@mui/icons-material';
 import {
@@ -119,7 +120,7 @@ function App() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
-  const [themeMode, setThemeMode] = useState<PaletteMode>('light');
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   const [recentFiles, setRecentFiles] = useState<string[]>([]);
   const [recentFilesAnchorEl, setRecentFilesAnchorEl] = useState<null | HTMLElement>(null);
   const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
@@ -201,7 +202,7 @@ function App() {
       setCurrentArticleId(articleId);
       setValue(article.content);
       // 加载文章的版本历史
-      const articleVersions = await versionService.getVersionsByArticleId(articleId);
+      const articleVersions = await versionService.getVersionsByArticle(articleId);
       setVersions(articleVersions);
     }
   };
@@ -209,9 +210,9 @@ function App() {
   // 自动保存功能
   useEffect(() => {
     if (!currentArticleId) return;
-    
-    let autoSaveTimer: NodeJS.Timeout;
-    
+
+    let autoSaveTimer: number;
+
     const saveCurrentArticle = () => {
       if (currentArticleId && value) {
         const currentArticle = articles.find(a => a.id === currentArticleId);
@@ -229,10 +230,10 @@ function App() {
         }
       }
     };
-    
+
     // 立即执行一次保存
     saveCurrentArticle();
-    
+
     // 设置定时器
     autoSaveTimer = setInterval(saveCurrentArticle, 30000); // 每30秒自动保存一次
 
@@ -285,13 +286,13 @@ function App() {
     localStorage.setItem('theme-mode', newMode);
     // 触发主题切换动画
     document.documentElement.style.transition = 'background-color 0.3s ease-in-out';
-    document.documentElement.style.backgroundColor = 
+    document.documentElement.style.backgroundColor =
       newMode === 'light' ? theme.palette.background.default : theme.palette.background.paper;
   };
 
   // 初始化主题
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme-mode') as PaletteMode | null;
+    const savedTheme = localStorage.getItem('theme-mode') as 'light' | 'dark' | null;
     if (savedTheme) {
       setThemeMode(savedTheme);
     } else {
@@ -524,9 +525,27 @@ function App() {
                 transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: themeMode === 'light' 
+                  boxShadow: themeMode === 'light'
                     ? '0 4px 12px rgba(0, 0, 0, 0.05)'
                     : '0 4px 12px rgba(0, 0, 0, 0.2)',
+                },
+              },
+            },
+          },
+          // 确保文本字段正确渲染
+          MuiTextField: {
+            styleOverrides: {
+              root: {
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: themeMode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: themeMode === 'light' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#5E6AD2',
+                  },
                 },
               },
             },
@@ -542,7 +561,7 @@ function App() {
       try {
         setIsLoading(true);
         // 这里可以添加其他初始化逻辑
-        const savedTheme = localStorage.getItem('theme-mode') as PaletteMode | null;
+        const savedTheme = localStorage.getItem('theme-mode') as 'light' | 'dark' | null;
         if (savedTheme) {
           setThemeMode(savedTheme);
         } else {
@@ -598,22 +617,39 @@ function App() {
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         <Toolbar content={value} />
-        <Box className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`} sx={{ flex: 1, display: 'flex', flexDirection: 'row', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', height: 'calc(100vh - 64px)', maxHeight: '900px', position: 'relative', boxShadow: themeMode === 'light' ? '0 2px 12px rgba(0, 0, 0, 0.1)' : '0 2px 12px rgba(0, 0, 0, 0.3)', transition: 'all 0.3s ease-in-out', mx: 'auto', my: 2, maxWidth: '1600px', width: '100%', '&.fullscreen': { maxHeight: '100vh', maxWidth: '100vw', mx: 0, my: 0, borderRadius: 0 } }}>
-          <Box className="editor-section" sx={{ flex: '1 1 50%', borderRight: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`, overflow: 'auto', display: 'flex', flexDirection: 'column', bgcolor: themeMode === 'light' ? '#F8F9FA' : '#1E1E1E', minHeight: '100%', maxHeight: '100%' }}>
-            <LargeFileEditor
-              content={value}
-              onChange={setValue}
-              theme={themeMode}
-            />
-          </Box>
-          <Box ref={previewRef} className="preview-section markdown-body" sx={{ flex: '1 1 50%', overflow: 'auto', padding: '20px', bgcolor: themeMode === 'light' ? '#F8F9FA' : '#1E1E1E', borderLeft: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`, minHeight: '100%', maxHeight: '100%', '& img': { maxWidth: '100%', height: 'auto' }, '& pre': { maxWidth: '100%', overflow: 'auto' }, '& table': { display: 'block', width: '100%', overflow: 'auto' }, '& blockquote': { borderLeft: '4px solid', borderLeftColor: themeMode === 'light' ? '#E5E7EB' : '#2D2E32', margin: '1em 0', padding: '0 1em' }, '& > *': { maxWidth: '100%' } }}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeHighlight, rehypeSlug, rehypeKatex]}
-            >
-              {value}
-            </ReactMarkdown>
-          </Box>
+        <Box
+          className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`}
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 2,
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            height: 'calc(100vh - 64px)',
+            maxHeight: '900px',
+            position: 'relative',
+            boxShadow: themeMode === 'light' ? '0 2px 12px rgba(0, 0, 0, 0.1)' : '0 2px 12px rgba(0, 0, 0, 0.3)',
+            transition: 'all 0.3s ease-in-out',
+            mx: 'auto',
+            my: 2,
+            maxWidth: '1600px',
+            width: '100%',
+            '&.fullscreen': {
+              maxHeight: '100vh',
+              maxWidth: '100vw',
+              mx: 0,
+              my: 0,
+              borderRadius: 0
+            }
+          }}
+        >
+          {/* 使用新的MarkdownEditorContainer组件 */}
+          <MarkdownEditorContainer
+            initialValue={value}
+            onContentChange={setValue}
+            className="flex-1"
+          />
         </Box>
       </Box>
     </ThemeProvider>

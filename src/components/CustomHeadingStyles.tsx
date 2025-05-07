@@ -22,7 +22,7 @@ export const CustomHeading: React.FC<CustomHeadingProps> = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   
-  // 基础样式
+  // 基础样式 - 增强视觉效果，适合在预览区域展示
   const baseStyles = {
     fontFamily: theme.typography.fontFamily,
     fontWeight: level <= 2 ? 700 : 600,
@@ -30,6 +30,7 @@ export const CustomHeading: React.FC<CustomHeadingProps> = ({
     marginTop: theme.spacing(level === 1 ? 3 : 2),
     marginBottom: theme.spacing(level === 1 ? 2 : 1.5),
     color: theme.palette.text.primary,
+    transition: 'all 0.3s ease',
   };
   
   // 根据样式类型应用不同的样式
