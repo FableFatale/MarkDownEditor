@@ -8,6 +8,8 @@ import MarkdownEditorApp from './MarkdownEditorApp'
 import SimpleMarkdownEditor from './SimpleMarkdownEditor'
 // 导入基础版Markdown编辑器
 import BasicEditor from './BasicEditor'
+// 导入文章管理演示页面
+import ArticleManagementDemo from './ArticleManagementDemo'
 
 // 直接导入CSS文件
 import './markdown-styles.css'
@@ -18,14 +20,17 @@ import './katex-styles.css'
 const rootElement = document.getElementById('root')
 if (rootElement) {
   try {
-    // 清除后备内容
-    rootElement.innerHTML = ''
+    // 确保清除后备内容，但保留根元素
+    while (rootElement.firstChild) {
+      rootElement.removeChild(rootElement.firstChild);
+    }
     const root = ReactDOM.createRoot(rootElement)
     // 使用条件渲染，根据URL参数决定显示哪个组件
     const urlParams = new URLSearchParams(window.location.search);
     const showTest = urlParams.has('test');
     const showSimple = urlParams.has('simple');
     const showBasic = urlParams.has('basic');
+    const showArticleManager = urlParams.has('articles');
 
     // 默认显示MarkdownEditorApp
     let componentToRender = <MarkdownEditorApp />;
@@ -37,6 +42,8 @@ if (rootElement) {
       componentToRender = <SimpleMarkdownEditor />;
     } else if (showBasic) {
       componentToRender = <BasicEditor />;
+    } else if (showArticleManager) {
+      componentToRender = <ArticleManagementDemo />;
     }
 
     // 打印当前渲染的组件类型，用于调试
@@ -44,6 +51,7 @@ if (rootElement) {
       showTest ? 'TestComponent' :
       showSimple ? 'SimpleMarkdownEditor' :
       showBasic ? 'BasicEditor' :
+      showArticleManager ? 'ArticleManagementDemo' :
       'MarkdownEditorApp'
     );
 

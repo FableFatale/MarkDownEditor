@@ -105,7 +105,7 @@ export const MarkdownEditorContainer = ({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', position: 'relative' }}>
       {/* 加载状态指示器 */}
       {isLoading && (
         <LinearProgress 
@@ -236,6 +236,7 @@ export const MarkdownEditorContainer = ({
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
+            minWidth: 0, // 确保弹性布局中不会溢出
           }}
         >
           <Box sx={{ 
@@ -243,7 +244,13 @@ export const MarkdownEditorContainer = ({
               display: 'flex', 
               flexDirection: 'column',
               borderBottom: `1px solid ${theme.palette.divider}`,
-              pb: 2
+              pb: 2,
+              position: 'sticky',
+              top: 0,
+              backgroundColor: theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
+              zIndex: 10,
+              backdropFilter: 'blur(8px)',
+              borderRadius: '4px 4px 0 0',
             }}>
             <Typography 
               variant="h6" 
@@ -303,9 +310,11 @@ export const MarkdownEditorContainer = ({
                 justifyContent: 'center',
                 height: '100%',
                 gap: 2,
+                width: '100%',
+                padding: 2,
               }}
             >
-              <CircularProgress size={40} thickness={4} />
+              <CircularProgress size={40} thickness={4} color="primary" />
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
                 {isLoading ? 'Loading content...' : 'Rendering preview...'}
                 {isLargeFile && (
@@ -322,10 +331,20 @@ export const MarkdownEditorContainer = ({
                 opacity: isLoading ? 0.6 : 1, 
                 transition: 'opacity 0.3s ease',
                 overflowY: 'auto',
-                width: '100%' // 确保内容宽度充分利用可用空间
+                width: '100%', // 确保内容宽度充分利用可用空间
+                height: '100%', // 确保内容高度充分利用可用空间
+                '& .prose': {
+                  maxWidth: 'none', // 覆盖prose默认的最大宽度限制
+                  width: '100%',
+                }
               }}
             >
-              <MarkdownPreview content={previewContent} showStyleControls={false} headingStyle={headingStyle} />
+              <MarkdownPreview 
+                content={previewContent} 
+                showStyleControls={false} 
+                headingStyle={headingStyle} 
+                className="preview-content"
+              />
             </Box>
           )}
         </Box>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Box, Container, Typography, Paper, ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Button, IconButton } from '@mui/material';
 import { MarkdownEditorContainer } from './components/editor/MarkdownEditorContainer';
-import { Menu as MenuIcon, DarkMode, LightMode, Save, PictureAsPdf } from '@mui/icons-material';
+import { WechatExporter } from './components/WechatExporter';
+import { Menu as MenuIcon, DarkMode, LightMode, Save, PictureAsPdf, WechatOutlined } from '@mui/icons-material';
 import './markdown-styles.css';
 import './modern-fonts.css';
 import './katex-styles.css';
@@ -50,6 +51,7 @@ $$
 const MarkdownEditorApp: React.FC = () => {
   const [content, setContent] = useState(initialMarkdown);
   const [darkMode, setDarkMode] = useState(false);
+  const [showWechatExporter, setShowWechatExporter] = useState(false);
   
   const theme = createTheme({
     palette: {
@@ -103,6 +105,14 @@ const MarkdownEditorApp: React.FC = () => {
             >
               导出PDF
             </Button>
+            <Button 
+              color="primary" 
+              startIcon={<WechatOutlined />}
+              sx={{ ml: 1 }}
+              onClick={() => setShowWechatExporter(true)}
+            >
+              导出到微信
+            </Button>
           </Toolbar>
         </AppBar>
         
@@ -122,6 +132,16 @@ const MarkdownEditorApp: React.FC = () => {
               onContentChange={setContent}
             />
           </Paper>
+          
+          {/* 微信导出组件 - 使用状态控制显示 */}
+          {showWechatExporter && (
+            <WechatExporter 
+              markdown={content} 
+              buttonText="导出到微信公众号"
+              className="wechat-exporter"
+              onClose={() => setShowWechatExporter(false)}
+            />
+          )}
         </Container>
       </Box>
     </ThemeProvider>
