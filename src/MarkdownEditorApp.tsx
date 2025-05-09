@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Container, Typography, Paper, ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Button, IconButton } from '@mui/material';
 import { MarkdownEditorContainer } from './components/editor/MarkdownEditorContainer';
 import { WechatExporter } from './components/WechatExporter';
-import { Menu as MenuIcon, DarkMode, LightMode, Save, PictureAsPdf, WechatOutlined } from '@mui/icons-material';
+import { Menu as MenuIcon, DarkMode, LightMode, Save, PictureAsPdf, Chat as WechatIcon } from '@mui/icons-material';
 import './markdown-styles.css';
 import './modern-fonts.css';
 import './katex-styles.css';
@@ -107,7 +107,7 @@ const MarkdownEditorApp: React.FC = () => {
             </Button>
             <Button 
               color="primary" 
-              startIcon={<WechatOutlined />}
+              startIcon={<WechatIcon />}
               sx={{ ml: 1 }}
               onClick={() => setShowWechatExporter(true)}
             >

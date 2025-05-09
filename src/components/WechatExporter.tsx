@@ -24,7 +24,7 @@ import {
   ContentCopy as CopyIcon,
   Info as InfoIcon,
   Close as CloseIcon,
-  WechatOutlined as WechatIcon,
+  Chat as WechatIcon,
   HelpOutline as HelpIcon,
 } from '@mui/icons-material';
 
