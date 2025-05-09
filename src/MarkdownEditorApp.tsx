@@ -139,7 +139,10 @@ const MarkdownEditorApp: React.FC = () => {
               markdown={content} 
               buttonText="导出到微信公众号"
               className="wechat-exporter"
-              onClose={() => setShowWechatExporter(false)}
+              onClose={() => {
+                // 使用setState的函数式更新确保状态正确更新
+                setShowWechatExporter(false);
+              }}
             />
           )}
         </Container>

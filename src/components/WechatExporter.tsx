@@ -121,10 +121,15 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
 
   // 处理对话框关闭
   const handleClose = () => {
+    // 先设置状态，再调用回调，避免DOM节点引用错误
     setOpen(false);
-    // 如果提供了onClose回调，则调用它
+    
+    // 使用setTimeout确保状态更新后再调用onClose
+    // 这样可以避免在DOM更新过程中出现节点引用错误
     if (onClose) {
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 0);
     }
   };
 
