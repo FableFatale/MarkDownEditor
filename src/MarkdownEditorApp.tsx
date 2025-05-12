@@ -140,8 +140,12 @@ const MarkdownEditorApp: React.FC = () => {
               buttonText="导出到微信公众号"
               className="wechat-exporter"
               onClose={() => {
-                // 使用setState的函数式更新确保状态正确更新
-                setShowWechatExporter(false);
+                // 使用函数式更新确保状态正确更新
+                // 不在回调中直接更新状态，而是在下一个事件循环中更新
+                // 这样可以避免在组件卸载过程中出现DOM节点引用错误
+                setTimeout(() => {
+                  setShowWechatExporter(false);
+                }, 0);
               }}
             />
           )}

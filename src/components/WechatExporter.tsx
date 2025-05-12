@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { convertMarkdownToWechatHTML, WechatStyleOptions, defaultWechatStyles, getWechatSupportInfo } from '../services/wechatExportService';
 import {
   Button,
@@ -43,7 +43,7 @@ interface WechatExporterProps {
  */
 export const WechatExporter: React.FC<WechatExporterProps> = ({
   markdown,
-  buttonText = '导出到微信公众号',
+  buttonText = '导出为微信公众号格式',
   className = '',
   id,
   sx,
@@ -61,6 +61,52 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
   
   // 自定义样式选项
   const [customStyles, setCustomStyles] = useState<WechatStyleOptions>(defaultWechatStyles);
+  
+  // 使用useRef跟踪组件的挂载状态
+  const isMountedRef = useRef(true);
+  
+  // 使用useEffect处理组件的生命周期
+  useEffect(() => {
+    // 组件挂载时，确保isMountedRef为true
+    isMountedRef.current = true;
+    
+    // 存储所有需要在组件卸载时清理的timeout
+    const timeoutIds: number[] = [];
+    
+    // 创建一个安全的setTimeout函数，自动跟踪所有timeout以便清理
+    const safeSetTimeout = (callback: () => void, delay: number) => {
+      const id = window.setTimeout(() => {
+        // 移除已执行的timeoutId
+        const index = timeoutIds.indexOf(id);
+        if (index > -1) {
+          timeoutIds.splice(index, 1);
+        }
+        // 只有在组件仍然挂载时才执行回调
+        if (isMountedRef.current) {
+          callback();
+        }
+      }, delay);
+      timeoutIds.push(id);
+      return id;
+    };
+    
+    // 将安全的setTimeout函数挂载到组件实例上
+    (window as any).safeSetTimeoutForWechatExporter = safeSetTimeout;
+    
+    // 返回清理函数，在组件卸载前执行
+    return () => {
+      // 标记组件已卸载，防止异步操作更新已卸载组件的状态
+      isMountedRef.current = false;
+      
+      // 清理所有未执行的timeout
+      timeoutIds.forEach(id => window.clearTimeout(id));
+      
+      // 移除全局引用
+      delete (window as any).safeSetTimeoutForWechatExporter;
+    };
+  }, []);
+
+  
 
   // 处理样式变更
   const handleStyleChange = (field: string, value: string | boolean) => {
@@ -72,45 +118,61 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
 
   // 转换Markdown为微信兼容的HTML
   const convertToWechatHTML = () => {
+    // 检查组件是否已卸载
+    if (!isMountedRef.current) return '';
+    
+    // 只在组件挂载状态下更新状态
     setIsConverting(true);
     
     try {
       // 使用服务进行转换
       const html = convertMarkdownToWechatHTML(markdown, customStyles);
       
-      setIsConverting(false);
+      // 再次检查组件是否已卸载
+      if (isMountedRef.current) {
+        setIsConverting(false);
+      }
       return html;
     } catch (error) {
       console.error('转换失败:', error);
-      setSnackbar({
-        open: true,
-        message: '转换失败，请检查Markdown内容',
-        severity: 'error'
-      });
-      setIsConverting(false);
+      // 再次检查组件是否已卸载
+      if (isMountedRef.current) {
+        setSnackbar({
+          open: true,
+          message: '转换失败，请检查Markdown内容',
+          severity: 'error'
+        });
+        setIsConverting(false);
+      }
       return '';
     }
   };
 
   // 复制HTML到剪贴板
   const copyToClipboard = () => {
-    if (!htmlContentRef.current) return;
+    if (!htmlContentRef.current || !isMountedRef.current) return;
     
     const html = htmlContentRef.current.innerHTML;
     navigator.clipboard.writeText(html)
       .then(() => {
-        setSnackbar({
-          open: true,
-          message: 'HTML已复制到剪贴板',
-          severity: 'success'
-        });
+        // 确保组件仍然挂载时才更新状态
+        if (isMountedRef.current) {
+          setSnackbar({
+            open: true,
+            message: 'HTML已复制到剪贴板',
+            severity: 'success'
+          });
+        }
       })
       .catch(() => {
-        setSnackbar({
-          open: true,
-          message: '复制失败，请手动复制',
-          severity: 'error'
-        });
+        // 确保组件仍然挂载时才更新状态
+        if (isMountedRef.current) {
+          setSnackbar({
+            open: true,
+            message: '复制失败，请手动复制',
+            severity: 'error'
+          });
+        }
       });
   };
 
@@ -124,12 +186,17 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
     // 先设置状态，再调用回调，避免DOM节点引用错误
     setOpen(false);
     
-    // 使用setTimeout确保状态更新后再调用onClose
-    // 这样可以避免在DOM更新过程中出现节点引用错误
+    // 使用延迟调用onClose回调，确保Dialog组件完全关闭后再触发
+    // 这样可以避免在组件卸载过程中出现DOM节点引用错误
     if (onClose) {
-      setTimeout(() => {
-        onClose();
-      }, 0);
+      // 使用安全的setTimeout确保在Dialog关闭动画完成后再调用onClose
+      // 通常Dialog关闭动画需要300ms左右
+      if ((window as any).safeSetTimeoutForWechatExporter) {
+        (window as any).safeSetTimeoutForWechatExporter(() => {
+          // 由于使用了安全的setTimeout，这里不需要再检查组件是否挂载
+          onClose();
+        }, 350);
+      }
     }
   };
 
@@ -208,9 +275,18 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
         onClose={handleClose}
         maxWidth="md"
         fullWidth
+        TransitionProps={{
+          onExited: () => {
+            // Dialog完全关闭后的回调，此时DOM已完全卸载，可以安全调用onClose
+            if (onClose && isMountedRef.current) {
+              // 直接调用onClose，不使用setTimeout
+              onClose();
+            }
+          }
+        }}
       >
         <DialogTitle>
-          导出到微信公众号
+          导出为微信公众号格式
           <IconButton
             aria-label="close"
             onClick={handleClose}
@@ -246,7 +322,7 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
           <Box sx={{ mt: 2 }}>
             {activeTab === 0 && (
               <Box>
-                <Typography variant="subtitle2" gutterBottom>预览（仅供参考，实际效果以微信显示为准）</Typography>
+                <Typography variant="subtitle2" gutterBottom>预览（仅供参考，实际效果以微信公众号显示为准，部分样式可能会被过滤）</Typography>
                 <Box
                   ref={htmlContentRef}
                   sx={{
@@ -266,7 +342,7 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
             {activeTab === 1 && (
               <Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="subtitle2">HTML源码（复制后粘贴到微信公众号编辑器）</Typography>
+                  <Typography variant="subtitle2">HTML源码（复制后粘贴到微信公众号编辑器的源码编辑模式）</Typography>
                   <Button
                     variant="outlined"
                     size="small"
@@ -287,7 +363,7 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
                   }}
                 />
                 <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-                  提示：在微信公众号编辑器中，点击"..."菜单，选择"插入代码"，然后粘贴此HTML代码
+                  提示：在微信公众号编辑器中，点击"..."菜单，选择"插入代码"或"源码编辑"，然后粘贴此HTML代码。微信公众号对HTML和CSS有严格限制，部分样式可能会被过滤。
                 </Typography>
               </Box>
             )}
