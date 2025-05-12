@@ -1,9 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { ThemeProvider } from './theme/ThemeContext'
+// 导入主应用
+import App from './App'
 // 保留测试组件以备需要
 import TestComponent from './TestComponent'
-// 恢复MarkdownEditorApp
-import MarkdownEditorApp from './MarkdownEditorApp'
 // 导入简单版Markdown编辑器
 import SimpleMarkdownEditor from './SimpleMarkdownEditor'
 // 导入基础版Markdown编辑器
@@ -32,8 +33,12 @@ if (rootElement) {
     const showBasic = urlParams.has('basic');
     const showArticleManager = urlParams.has('articles');
 
-    // 默认显示MarkdownEditorApp
-    let componentToRender = <MarkdownEditorApp />;
+    // 默认显示App（主应用）
+    let componentToRender = (
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    );
 
     // 根据URL参数决定显示哪个组件
     if (showTest) {
