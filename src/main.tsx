@@ -11,7 +11,11 @@ import SimpleMarkdownEditor from './SimpleMarkdownEditor'
 import BasicEditor from './BasicEditor'
 // 导入文章管理演示页面
 import ArticleManagementDemo from './ArticleManagementDemo'
+// 导入新的现代UI编辑器组件
+import ModernMarkdownEditor from './ModernMarkdownEditor'
 
+// 导入Tailwind CSS
+import './tailwind.css'
 // 直接导入CSS文件
 import './markdown-styles.css'
 import './modern-fonts.css'
@@ -26,28 +30,37 @@ if (rootElement) {
       rootElement.removeChild(rootElement.firstChild);
     }
     const root = ReactDOM.createRoot(rootElement)
-    // 使用条件渲染，根据URL参数决定显示哪个组件
-    const urlParams = new URLSearchParams(window.location.search);
-    const showTest = urlParams.has('test');
-    const showSimple = urlParams.has('simple');
-    const showBasic = urlParams.has('basic');
-    const showArticleManager = urlParams.has('articles');
+    
 
-    // 默认显示App（主应用）
-    let componentToRender = (
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    );
+// 使用条件渲染，根据URL参数决定显示哪个组件
+const urlParams = new URLSearchParams(window.location.search);
+const showTest = urlParams.has('test');
+const showSimple = urlParams.has('simple');
+const showBasic = urlParams.has('basic');
+const showArticleManager = urlParams.has('articles');
+const showModern = urlParams.has('modern');
 
-    // 根据URL参数决定显示哪个组件
-    if (showTest) {
-      componentToRender = <TestComponent />;
-    } else if (showSimple) {
-      componentToRender = <SimpleMarkdownEditor />;
-    } else if (showBasic) {
-      componentToRender = <BasicEditor />;
-    } else if (showArticleManager) {
+// 默认显示App（主应用）
+let componentToRender = (
+  <ThemeProvider>
+    <App />
+  </ThemeProvider>
+);
+
+// 根据URL参数决定显示哪个组件
+if (showTest) {
+  componentToRender = <TestComponent />;
+} else if (showSimple) {
+  componentToRender = <SimpleMarkdownEditor />;
+} else if (showBasic) {
+  componentToRender = <BasicEditor />;
+} else if (showModern) {
+  componentToRender = (
+    <ThemeProvider>
+      <ModernMarkdownEditor />
+    </ThemeProvider>
+  );
+} else if (showArticleManager) {
       componentToRender = <ArticleManagementDemo />;
     }
 
