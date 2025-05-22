@@ -19,6 +19,12 @@ export default defineConfig({
     sourcemap: true,
   },
   optimizeDeps: {
+    include: [
+      '@lezer/highlight',
+      '@codemirror/language-data',
+      '@codemirror/language',
+      '@codemirror/view'
+    ],
     exclude: ['chunk-NNTYP3W4', 'chunk-IOSCVJYZ', 'chunk-6WQIRZJN']
   }
 })

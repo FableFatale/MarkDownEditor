@@ -7,19 +7,21 @@
     "dev": "vite --port 3001 --strictPort false",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "clean": "rimraf node_modules/.vite && vite --force"
+    "clean": "rimraf node_modules/.vite && vite --force",
+    "test": "npx jest"
   },
   "dependencies": {
-    "@codemirror/basic-setup": "^0.20.0",
     "@codemirror/commands": "^6.8.1",
-    "@codemirror/highlight": "^0.19.8",
     "@codemirror/lang-markdown": "^6.3.2",
+    "@codemirror/language": "^6.11.0",
     "@codemirror/language-data": "^6.5.1",
     "@codemirror/theme-one-dark": "^6.1.2",
+    "@codemirror/view": "^6.36.8",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@headlessui/react": "^2.2.3",
     "@heroicons/react": "^2.2.0",
+    "@lezer/highlight": "^1.2.1",
     "@mui/icons-material": "^5.17.1",
     "@mui/material": "^5.17.1",
     "@saplingai/sapling-js": "^1.0.36",
@@ -60,14 +62,18 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.6",
-    "@tailwindcss/typography": "^0.5.16",
+    "@babel/core": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-react": "^7.27.1",
+    "@tailwindcss/postcss": "^4.1.7",
+    "@tailwindcss/typography": "^0.5.10",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.21",
+    "babel-jest": "^29.7.0",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.6",
+    "tailwindcss": "^3.4.1",
     "typescript": "^5.8.3",
     "vite": "^6.3.2"
   }

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>简单的Tailwind CSS测试</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              500: '#5E6AD2',
+              600: '#4f46e5',
+            },
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer components {
+      .btn {
+        @apply px-4 py-2 rounded;
+      }
+      .btn-primary {
+        @apply bg-primary-500 text-white hover:bg-primary-600;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+  <div class="container mx-auto p-8">
+    <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+      <div class="p-8">
+        <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold">
+          简单的Tailwind CSS测试
+        </div>
+        <h1 class="mt-2 text-xl font-medium text-gray-900 dark:text-white">
+          这是一个简单的Tailwind CSS测试页面
+        </h1>
+        <p class="mt-2 text-gray-500 dark:text-gray-300">
+          如果你能看到这个页面的样式正确应用，说明Tailwind CSS配置成功。
+        </p>
+        <div class="mt-4 flex space-x-2">
+          <button class="btn btn-primary">
+            主要按钮
+          </button>
+          <button class="btn bg-gray-200 text-gray-800 hover:bg-gray-300">
+            次要按钮
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // 检测是否支持暗色模式
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+    
+    // 添加暗色模式切换按钮
+    const toggleButton = document.createElement('button');
+    toggleButton.className = 'fixed bottom-4 right-4 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 px-4 py-2 rounded-lg';
+    toggleButton.textContent = '切换暗/亮模式';
+    toggleButton.onclick = () => document.documentElement.classList.toggle('dark');
+    document.body.appendChild(toggleButton);
+  </script>
+</body>
+</html>

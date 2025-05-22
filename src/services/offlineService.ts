@@ -56,6 +56,16 @@ class OfflineService {
     });
   }
 
+  // 保存简单内容（用于临时保存编辑器内容）
+  async saveContent(content: string): Promise<void> {
+    try {
+      localStorage.setItem('offline-content', content);
+      console.log('内容已保存到离线存储');
+    } catch (error) {
+      console.error('保存内容到离线存储失败:', error);
+    }
+  }
+
   async getArticle(articleId: string): Promise<Article | undefined> {
     const db = await this.initDB();
     return await db.get('offline_articles', articleId);

@@ -1,0 +1,94 @@
+/* 编辑器工具栏样式 */
+.editor-format-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+}
+
+.dark .editor-format-toolbar {
+  background-color: rgba(31, 41, 55, 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.editor-format-toolbar:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dark .editor-format-toolbar:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.editor-format-toolbar .toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  color: #4b5563;
+  transition: all 0.15s ease-in-out;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  margin: 0 1px;
+}
+
+.dark .editor-format-toolbar .toolbar-button {
+  color: #d1d5db;
+}
+
+.editor-format-toolbar .toolbar-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.dark .editor-format-toolbar .toolbar-button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.editor-format-toolbar .toolbar-button:active {
+  transform: translateY(0);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark .editor-format-toolbar .toolbar-button:active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.editor-format-toolbar .toolbar-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.editor-format-toolbar .toolbar-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 工具栏分隔符 */
+.editor-format-toolbar .toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background-color: rgba(229, 231, 235, 0.8);
+  margin: 0 4px;
+}
+
+.dark .editor-format-toolbar .toolbar-divider {
+  background-color: rgba(75, 85, 99, 0.8);
+}
+
+/* 隐藏滚动条但保持功能 */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}

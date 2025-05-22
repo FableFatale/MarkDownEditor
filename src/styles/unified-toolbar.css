@@ -1,0 +1,191 @@
+/* 统一工具栏样式 */
+.unified-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+  padding: 0.5rem 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease-in-out;
+  /* 使用内联样式代替Tailwind类 */
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  width: 100%;
+}
+
+.dark .unified-toolbar {
+  background-color: rgba(31, 41, 55, 0.95);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.unified-toolbar:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .unified-toolbar:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 工具栏按钮样式 */
+.unified-toolbar .toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  color: #4b5563;
+  transition: all 0.15s ease-in-out;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.dark .unified-toolbar .toolbar-button {
+  color: #d1d5db;
+}
+
+.unified-toolbar .toolbar-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.dark .unified-toolbar .toolbar-button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.unified-toolbar .toolbar-button:active {
+  transform: translateY(0);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark .unified-toolbar .toolbar-button:active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.unified-toolbar .toolbar-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+/* 字数统计样式 */
+.unified-toolbar .word-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  background-color: rgba(243, 244, 246, 0.7);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #6b7280;
+  transition: all 0.2s ease-in-out;
+}
+
+.dark .unified-toolbar .word-stats {
+  background-color: rgba(55, 65, 81, 0.7);
+  color: #9ca3af;
+}
+
+.unified-toolbar .word-stats:hover {
+  background-color: rgba(243, 244, 246, 0.9);
+}
+
+.dark .unified-toolbar .word-stats:hover {
+  background-color: rgba(55, 65, 81, 0.9);
+}
+
+/* 导出和设置按钮样式 */
+.unified-toolbar .action-button {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  background-color: rgba(243, 244, 246, 0.7);
+  color: #4b5563;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  border: none;
+}
+
+.dark .unified-toolbar .action-button {
+  background-color: rgba(55, 65, 81, 0.7);
+  color: #d1d5db;
+}
+
+.unified-toolbar .action-button:hover {
+  background-color: rgba(243, 244, 246, 0.9);
+  transform: translateY(-1px);
+}
+
+.dark .unified-toolbar .action-button:hover {
+  background-color: rgba(55, 65, 81, 0.9);
+}
+
+.unified-toolbar .action-button:active {
+  transform: translateY(0);
+}
+
+.unified-toolbar .action-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+/* 工具栏菜单样式 */
+.unified-toolbar .toolbar-menu {
+  position: absolute;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 14rem;
+  border-radius: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dark .unified-toolbar .toolbar-menu {
+  background-color: rgba(31, 41, 55, 0.95);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.12);
+}
+
+.unified-toolbar .toolbar-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #4b5563;
+  transition: all 0.15s ease-in-out;
+}
+
+.dark .unified-toolbar .toolbar-menu-item {
+  color: #d1d5db;
+}
+
+.unified-toolbar .toolbar-menu-item:hover {
+  background-color: rgba(243, 244, 246, 0.7);
+}
+
+.dark .unified-toolbar .toolbar-menu-item:hover {
+  background-color: rgba(55, 65, 81, 0.7);
+}
+
+/* 隐藏滚动条但保持功能 */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}

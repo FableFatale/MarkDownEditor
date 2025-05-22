@@ -1,163 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Typography,
-  Divider,
-  Alert,
-  Snackbar,
-} from '@mui/material';
-import {
-  Restore as RestoreIcon,
-  Delete as DeleteIcon,
-  History as HistoryIcon,
-} from '@mui/icons-material';
-import { backupService } from '../services/backupService';
+import { ClockIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { Transition } from '@headlessui/react';
 
 interface BackupManagerProps {
-  onBackupRestore: () => void;
+  content: string;
 }
 
-export const BackupManager: React.FC<BackupManagerProps> = ({ onBackupRestore }) => {
+export const BackupManager: React.FC<BackupManagerProps> = ({ content }) => {
   const [open, setOpen] = useState(false);
-  const [backups, setBackups] = useState<Array<{ timestamp: number; data: string }>>([]);
-  const [snackbar, setSnackbar] = useState<{open: boolean; message: string; severity: 'success' | 'error'}>(
-    {open: false, message: '', severity: 'success'}
-  );
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
+  // 自动保存功能
   useEffect(() => {
-    if (open) {
-      loadBackups();
-    }
-  }, [open]);
+    // 每5分钟自动保存一次
+    const autoSaveInterval = setInterval(() => {
+      if (content) {
+        saveBackup();
+      }
+    }, 5 * 60 * 1000);
 
-  const loadBackups = () => {
-    const allBackups = backupService.getAllBackups();
-    setBackups(allBackups);
+    return () => clearInterval(autoSaveInterval);
+  }, [content]);
+
+  // 保存备份
+  const saveBackup = () => {
+    try {
+      const backups = JSON.parse(localStorage.getItem('markdown-backups') || '[]');
+
+      // 限制最多保存10个备份
+      if (backups.length >= 10) {
+        backups.pop(); // 移除最旧的备份
+      }
+
+      // 添加新备份
+      backups.unshift({
+        timestamp: Date.now(),
+        content: content,
+        preview: content.substring(0, 100) + (content.length > 100 ? '...' : '')
+      });
+
+      localStorage.setItem('markdown-backups', JSON.stringify(backups));
+      showNotification('备份已保存', 'success');
+      return true;
+    } catch (error) {
+      console.error('保存备份失败:', error);
+      showNotification('备份保存失败', 'error');
+      return false;
+    }
   };
 
-  const handleRestore = (timestamp: number) => {
-    if (backupService.restoreFromBackup(timestamp)) {
-      setSnackbar({open: true, message: '备份恢复成功', severity: 'success'});
-      onBackupRestore();
-      setOpen(false);
-    } else {
-      setSnackbar({open: true, message: '备份恢复失败', severity: 'error'});
-    }
-  };
-
-  const handleDelete = (timestamp: number) => {
-    if (backupService.deleteBackup(timestamp)) {
-      setSnackbar({open: true, message: '备份删除成功', severity: 'success'});
-      loadBackups();
-    } else {
-      setSnackbar({open: true, message: '备份删除失败', severity: 'error'});
-    }
-  };
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
+  // 显示通知
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 3000);
   };
 
   return (
     <>
-      <IconButton
-        onClick={() => setOpen(true)}
-        title="备份管理"
-        size="small"
-        color="primary"
+      {/* 备份按钮 */}
+      <button
+        onClick={saveBackup}
+        className="text-xs flex items-center text-gray-500 hover:text-primary-500 transition-colors"
+        title="创建备份"
       >
-        <HistoryIcon />
-      </IconButton>
+        <ClockIcon className="w-4 h-4 mr-1" />
+        自动保存
+      </button>
 
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="sm"
-        fullWidth
+      {/* 通知提示 */}
+      <Transition
+        show={notification.show}
+        enter="transition-opacity duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition-opacity duration-300"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+        className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50"
       >
-        <DialogTitle>备份管理</DialogTitle>
-        <DialogContent>
-          {backups.length === 0 ? (
-            <Typography color="text.secondary" align="center" sx={{ py: 3 }}>
-              暂无备份记录
-            </Typography>
-          ) : (
-            <List>
-              {backups.map((backup, index) => (
-                <React.Fragment key={backup.timestamp}>
-                  {index > 0 && <Divider />}
-                  <ListItem>
-                    <ListItemText
-                      primary={formatDate(backup.timestamp)}
-                      secondary={`备份大小: ${(backup.data.length / 1024).toFixed(2)} KB`}
-                    />
-                    <ListItemSecondaryAction>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleRestore(backup.timestamp)}
-                        title="恢复此备份"
-                        color="primary"
-                      >
-                        <RestoreIcon />
-                      </IconButton>
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleDelete(backup.timestamp)}
-                        title="删除此备份"
-                        color="error"
-                        sx={{ ml: 1 }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>关闭</Button>
-          <Button
-            onClick={() => {
-              if (backupService.createBackup()) {
-                setSnackbar({open: true, message: '创建备份成功', severity: 'success'});
-                loadBackups();
-              } else {
-                setSnackbar({open: true, message: '创建备份失败', severity: 'error'});
-              }
-            }}
-            variant="contained"
-            color="primary"
-          >
-            创建备份
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({...snackbar, open: false})}
-      >
-        <Alert
-          onClose={() => setSnackbar({...snackbar, open: false})}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        <div className={`px-4 py-2 rounded-lg shadow-lg ${
+          notification.type === 'success'
+            ? 'bg-green-500 text-white'
+            : 'bg-red-500 text-white'
+        }`}>
+          {notification.message}
+        </div>
+      </Transition>
     </>
   );
 };

@@ -33,7 +33,7 @@ export const MarkdownEditorContainer = ({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [headingStyle, setHeadingStyle] = useState<string>('default');
   const previewRef = useRef<HTMLDivElement>(null);
-  
+
   // Determine if we should use the large file editor based on content size
   const isLargeFile = useMemo(() => {
     return initialValue.length > largeFileThreshold;
@@ -45,7 +45,7 @@ export const MarkdownEditorContainer = ({
       debounce((newContent: string) => {
         setContent(newContent);
         onContentChange?.(newContent);
-        
+
         // 对于大文件，延迟更新预览内容以提高性能
         if (isLargeFile) {
           setIsPreviewUpdating(true);
@@ -59,17 +59,17 @@ export const MarkdownEditorContainer = ({
       }, 300),
     [onContentChange, isLargeFile]
   );
-  
+
   // 处理加载状态变化
   const handleLoadingStateChange = useCallback((loading: boolean) => {
     setIsLoading(loading);
   }, []);
-  
+
   // 切换暗黑模式
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode(prev => !prev);
   }, []);
-  
+
   // 清理debounce函数
   useEffect(() => {
     return () => {
@@ -108,18 +108,18 @@ export const MarkdownEditorContainer = ({
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', position: 'relative' }}>
       {/* 加载状态指示器 */}
       {isLoading && (
-        <LinearProgress 
-          sx={{ 
-            position: 'absolute', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            height: 2, 
-            zIndex: 9999 
-          }} 
+        <LinearProgress
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            zIndex: 9999
+          }}
         />
       )}
-      
+
       {/* 工具栏 */}
       <Box
         sx={{
@@ -133,11 +133,10 @@ export const MarkdownEditorContainer = ({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <WordCounter text={content} />
           {isLargeFile && (
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 color: theme.palette.warning.main,
                 display: 'flex',
                 alignItems: 'center',
@@ -239,9 +238,9 @@ export const MarkdownEditorContainer = ({
             minWidth: 0, // 确保弹性布局中不会溢出
           }}
         >
-          <Box sx={{ 
+          <Box sx={{
               mb: 2,
-              display: 'flex', 
+              display: 'flex',
               flexDirection: 'column',
               borderBottom: `1px solid ${theme.palette.divider}`,
               pb: 2,
@@ -252,11 +251,11 @@ export const MarkdownEditorContainer = ({
               backdropFilter: 'blur(8px)',
               borderRadius: '4px 4px 0 0',
             }}>
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
-                mb: 1, 
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                mb: 1,
                 fontWeight: 'medium',
                 color: theme.palette.text.secondary,
                 display: 'flex',
@@ -266,21 +265,21 @@ export const MarkdownEditorContainer = ({
             >
               <span>预览区域</span>
               {isLoading && (
-                <CircularProgress 
-                  size={20} 
+                <CircularProgress
+                  size={20}
                   thickness={4}
-                  sx={{ opacity: 0.7 }} 
+                  sx={{ opacity: 0.7 }}
                 />
               )}
             </Typography>
-            
+
             {/* 标题样式选择器 - 移动到预览区域内部 */}
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
                 <FormatColorTextIcon sx={{ mr: 1, color: theme.palette.primary.main, fontSize: '1.2rem' }} />
                 <Typography variant="subtitle2" fontWeight="medium">标题样式设置</Typography>
               </Box>
-              
+
               <Tooltip title="选择不同的标题样式，立即在预览区查看效果">
                 <FormControl size="small" variant="outlined" sx={{ minWidth: 180 }}>
                   <InputLabel>标题样式</InputLabel>
@@ -325,10 +324,10 @@ export const MarkdownEditorContainer = ({
               </Typography>
             </Box>
           ) : (
-            <Box 
-              sx={{ 
+            <Box
+              sx={{
                 flexGrow: 1,
-                opacity: isLoading ? 0.6 : 1, 
+                opacity: isLoading ? 0.6 : 1,
                 transition: 'opacity 0.3s ease',
                 overflowY: 'auto',
                 width: '100%', // 确保内容宽度充分利用可用空间
@@ -339,10 +338,10 @@ export const MarkdownEditorContainer = ({
                 }
               }}
             >
-              <MarkdownPreview 
-                content={previewContent} 
-                showStyleControls={false} 
-                headingStyle={headingStyle} 
+              <MarkdownPreview
+                content={previewContent}
+                showStyleControls={false}
+                headingStyle={headingStyle}
                 className="preview-content"
               />
             </Box>

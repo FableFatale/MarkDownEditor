@@ -1,0 +1,15 @@
+/* 主样式文件，整合所有样式 */
+
+/* 导入其他样式文件 - 必须在所有其他语句之前 */
+@import './toolbar.css';
+@import './editor-toolbar.css';
+@import './unified-toolbar.css';
+@import './top-toolbar.css';
+@import '../modern-fonts.css';
+@import '../markdown-styles.css';
+@import '../katex-styles.css';
+
+/* 导入Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

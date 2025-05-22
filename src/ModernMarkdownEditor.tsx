@@ -8,7 +8,6 @@ import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { EditorView } from '@codemirror/view';
-import { basicSetup } from '@codemirror/basic-setup';
 import { oneDark } from '@codemirror/theme-one-dark';
 import debounce from 'lodash.debounce';
 import ModernLayout from './components/ModernLayout';
@@ -16,12 +15,10 @@ import { useThemeContext } from './theme/ThemeContext';
 import { WordCounter } from './components/WordCounter';
 import { BackupManager } from './components/BackupManager';
 import { offlineService } from './services/offlineService';
+import TopToolbar from './components/TopToolbar';
 
 // 导入自定义样式
-import './markdown-styles.css';
-import './katex-styles.css';
-import './styles/toolbar.css';
-import './tailwind.css';
+import './styles/main.css';
 
 const initialMarkdown = `# 欢迎使用现代 Markdown 编辑器
 
@@ -101,7 +98,7 @@ const ModernMarkdownEditor: React.FC = () => {
       code: () => setContent(prev => prev + '```\n代码块\n```'),
       link: () => setContent(prev => prev + '[链接文本](url)'),
       image: () => setContent(prev => prev + '![图片描述](图片url)'),
-      table: () => setContent(prev => prev + '| 列1 | 列2 |\n| --- | --- |\n| 内容1 | 内容2 |'),
+      table: () => setContent(prev => prev + '| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 内容1 | 内容2 | 内容3 |'),
       'bullet-list': () => setContent(prev => prev + '- 列表项'),
       'number-list': () => setContent(prev => prev + '1. 列表项'),
       'heading-1': () => setContent(prev => prev + '# 一级标题'),
@@ -111,6 +108,10 @@ const ModernMarkdownEditor: React.FC = () => {
       'heading-5': () => setContent(prev => prev + '##### 五级标题'),
       'heading-6': () => setContent(prev => prev + '###### 六级标题'),
       'strikethrough': () => setContent(prev => prev + '~~删除线文本~~'),
+      'align-left': () => setContent(prev => prev + '<div style="text-align: left">左对齐文本</div>'),
+      'align-center': () => setContent(prev => prev + '<div style="text-align: center">居中对齐文本</div>'),
+      'align-right': () => setContent(prev => prev + '<div style="text-align: right">右对齐文本</div>'),
+      'align-justify': () => setContent(prev => prev + '<div style="text-align: justify">两端对齐文本</div>'),
     };
 
     if (formatActions[format]) {
@@ -189,10 +190,10 @@ const ModernMarkdownEditor: React.FC = () => {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging || !containerRef.current) return;
-      
+
       const containerRect = containerRef.current.getBoundingClientRect();
       const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-      
+
       // 限制拖动范围
       if (newWidth > 20 && newWidth < 80) {
         setEditorWidth(`${newWidth}%`);
@@ -218,6 +219,18 @@ const ModernMarkdownEditor: React.FC = () => {
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
   const charCount = content.length;
 
+  // 计算预计阅读时间
+  const getReadingTime = (text: string): string => {
+    const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const englishWords = (text.match(/[a-zA-Z]+(?:['''][a-zA-Z]+)*(?:-[a-zA-Z]+)*/g) || []).length;
+
+    // 中文阅读速度：300字/分钟，英文阅读速度：200词/分钟
+    const minutes = Math.ceil((chineseChars / 300) + (englishWords / 200));
+    return minutes < 1 ? '< 1分钟' : `${minutes}分钟`;
+  };
+
+  const readingTime = getReadingTime(content);
+
   // 离线编辑支持
   useEffect(() => {
     // 注册离线编辑事件监听
@@ -239,33 +252,53 @@ const ModernMarkdownEditor: React.FC = () => {
   }, [content]);
 
   return (
-    <ModernLayout 
-      onFormatText={handleFormatText}
-      onExport={handleExport}
-    >
-      <div 
+    <div className="flex flex-col h-screen">
+      {/* 顶部工具栏 */}
+      <TopToolbar
+        onFormatText={handleFormatText}
+        onExport={handleExport}
+        isDarkMode={isDarkMode}
+        isFullscreen={false}
+        wordCount={wordCount}
+        charCount={charCount}
+        readingTime={readingTime}
+        onToggleTheme={() => {
+          // 切换主题
+          const newMode = theme.mode === 'light' ? 'dark' : 'light';
+          localStorage.setItem('theme-mode', newMode);
+        }}
+        onToggleFullscreen={() => {
+          // 切换全屏
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+          } else if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        }}
+      />
+
+      <div
         ref={containerRef}
         className="flex-1 flex flex-col md:flex-row overflow-hidden"
       >
         {/* 编辑器区域 */}
-        <div className="editor-pane h-1/2 md:h-auto md:w-1/2 lg:w-auto" style={{ width: editorWidth }}>
+        <div className="editor-pane h-1/2 md:h-auto md:w-1/2 lg:w-auto flex flex-col" style={{ width: editorWidth }}>
           <CodeMirror
             value={content}
             height="100%"
             extensions={[
-              basicSetup,
               markdown({ base: markdownLanguage, codeLanguages: languages }),
               EditorView.lineWrapping,
               isDarkMode ? oneDark : []
             ]}
             onChange={(value) => handleChange(value)}
-            className="h-full"
+            className="flex-1"
           />
         </div>
 
         {/* 分隔条 - 仅在桌面显示 */}
-        <div 
-          className="resizer hidden md:block" 
+        <div
+          className="resizer hidden md:block"
           onMouseDown={handleMouseDown}
           style={{ cursor: isDragging ? 'col-resize' : 'default' }}
         />
@@ -283,12 +316,8 @@ const ModernMarkdownEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* 底部状态栏 */}
-      <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-        <div>
-          <span className="mr-4">{wordCount} 词</span>
-          <span>{charCount} 字符</span>
-        </div>
+      {/* 底部状态栏 - 只保留离线模式和备份管理器 */}
+      <div className="flex items-center justify-end px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center">
           {!navigator.onLine && (
             <span className="text-amber-500 font-medium mr-2">离线模式</span>
@@ -296,7 +325,7 @@ const ModernMarkdownEditor: React.FC = () => {
           <BackupManager content={content} />
         </div>
       </div>
-    </ModernLayout>
+    </div>
   );
 };
 

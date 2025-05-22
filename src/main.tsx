@@ -13,10 +13,18 @@ import BasicEditor from './BasicEditor'
 import ArticleManagementDemo from './ArticleManagementDemo'
 // 导入新的现代UI编辑器组件
 import ModernMarkdownEditor from './ModernMarkdownEditor'
+// 导入Tailwind CSS测试组件
+import TailwindTest from './TailwindTest'
+// 导入简单的Tailwind CSS测试组件
+import SimpleTailwindTest from './SimpleTailwindTest'
+// 导入最小化的Tailwind CSS测试组件
+import MinimalTailwindTest from './MinimalTailwindTest'
+// 导入简单的Tailwind CSS演示组件
+import SimpleTailwindDemo from './SimpleTailwindDemo'
 
-// 导入Tailwind CSS
-import './tailwind.css'
-// 直接导入CSS文件
+// 导入主样式文件
+import './styles/main.css'
+// 导入其他CSS文件
 import './markdown-styles.css'
 import './modern-fonts.css'
 import './katex-styles.css'
@@ -30,7 +38,7 @@ if (rootElement) {
       rootElement.removeChild(rootElement.firstChild);
     }
     const root = ReactDOM.createRoot(rootElement)
-    
+
 
 // 使用条件渲染，根据URL参数决定显示哪个组件
 const urlParams = new URLSearchParams(window.location.search);
@@ -39,6 +47,10 @@ const showSimple = urlParams.has('simple');
 const showBasic = urlParams.has('basic');
 const showArticleManager = urlParams.has('articles');
 const showModern = urlParams.has('modern');
+const showTailwind = urlParams.has('tailwind');
+const showSimpleTailwind = urlParams.has('simple-tailwind');
+const showMinimalTailwind = urlParams.has('minimal-tailwind');
+const showSimpleTailwindDemo = urlParams.has('simple-tailwind-demo');
 
 // 默认显示App（主应用）
 let componentToRender = (
@@ -60,9 +72,33 @@ if (showTest) {
       <ModernMarkdownEditor />
     </ThemeProvider>
   );
+} else if (showTailwind) {
+  componentToRender = (
+    <ThemeProvider>
+      <TailwindTest />
+    </ThemeProvider>
+  );
+} else if (showSimpleTailwind) {
+  componentToRender = (
+    <ThemeProvider>
+      <SimpleTailwindTest />
+    </ThemeProvider>
+  );
+} else if (showMinimalTailwind) {
+  componentToRender = (
+    <ThemeProvider>
+      <MinimalTailwindTest />
+    </ThemeProvider>
+  );
+} else if (showSimpleTailwindDemo) {
+  componentToRender = (
+    <ThemeProvider>
+      <SimpleTailwindDemo />
+    </ThemeProvider>
+  );
 } else if (showArticleManager) {
-      componentToRender = <ArticleManagementDemo />;
-    }
+  componentToRender = <ArticleManagementDemo />;
+}
 
     // 打印当前渲染的组件类型，用于调试
     console.log('当前渲染组件:',
@@ -70,6 +106,11 @@ if (showTest) {
       showSimple ? 'SimpleMarkdownEditor' :
       showBasic ? 'BasicEditor' :
       showArticleManager ? 'ArticleManagementDemo' :
+      showTailwind ? 'TailwindTest' :
+      showSimpleTailwind ? 'SimpleTailwindTest' :
+      showMinimalTailwind ? 'MinimalTailwindTest' :
+      showSimpleTailwindDemo ? 'SimpleTailwindDemo' :
+      showModern ? 'ModernMarkdownEditor' :
       'MarkdownEditorApp'
     );
 

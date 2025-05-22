@@ -1,10 +1,10 @@
 import { useEffect, useRef, CSSProperties } from 'react';
-import { EditorView, basicSetup } from 'codemirror';
+import { EditorView } from 'codemirror'; // Assuming 'codemirror' might be a remnant or should be @codemirror/view
 import { markdown } from '@codemirror/lang-markdown';
 import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/highlight';
-import { tags } from '@lezer/highlight';
+// import { HighlightStyle, syntaxHighlighting } from '@codemirror/highlight'; // Removed as package is removed
+// import { tags } from '@lezer/highlight'; // Removed as it's related to @codemirror/highlight
 import { editorKeymap } from './EditorKeyBindings';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 
@@ -26,65 +26,8 @@ export const MarkdownEditorCore = ({
   const muiTheme = useMuiTheme();
   const isDarkMode = muiTheme.palette.mode === 'dark';
 
-  // 简化编辑区的Markdown语法高亮样式，标题样式将在预览区域应用
-  const markdownHighlightStyle = HighlightStyle.define([
-    {
-      tag: tags.heading1,
-      fontWeight: 'bold',
-      color: isDarkMode ? '#61afef' : '#1976d2',
-    },
-    {
-      tag: tags.heading2,
-      fontWeight: 'bold',
-      color: isDarkMode ? '#c678dd' : '#7b1fa2',
-    },
-    {
-      tag: tags.heading3,
-      fontWeight: 'bold',
-      color: isDarkMode ? '#e5c07b' : '#ff9800',
-    },
-    { tag: tags.heading4, fontWeight: 'bold' },
-    { tag: tags.heading5, fontWeight: 'bold' },
-    { tag: tags.heading6, fontWeight: 'bold' },
-    { tag: tags.emphasis, fontStyle: 'italic' },
-    { tag: tags.strong, fontWeight: 'bold' },
-    {
-      tag: tags.link,
-      color: isDarkMode ? '#61afef' : '#2196f3',
-      textDecoration: 'underline',
-    },
-    {
-      tag: tags.url,
-      color: isDarkMode ? '#61afef' : '#2196f3',
-      textDecoration: 'underline',
-    },
-    {
-      tag: tags.quote,
-      color: isDarkMode ? '#98c379' : '#4caf50',
-      fontStyle: 'italic',
-    },
-    {
-      tag: tags.list,
-      color: isDarkMode ? '#abb2bf' : '#424242',
-    },
-    {
-      tag: tags.listMark,
-      color: isDarkMode ? '#e06c75' : '#f44336',
-      fontWeight: 'bold',
-    },
-    {
-      tag: tags.code,
-      backgroundColor: isDarkMode ? '#282c34' : '#f5f5f5',
-      color: isDarkMode ? '#abb2bf' : '#333',
-      fontFamily: 'monospace',
-      padding: '0 4px',
-      borderRadius: '3px',
-    },
-    {
-      tag: tags.content,
-      color: isDarkMode ? '#abb2bf' : '#333',
-    },
-  ]);
+  // markdownHighlightStyle removed as @codemirror/highlight and @lezer/highlight are removed.
+  // Syntax highlighting will be handled by the theme and @codemirror/lang-markdown.
 
   // 编辑器主题
   const editorTheme = EditorView.theme({
@@ -140,11 +83,13 @@ export const MarkdownEditorCore = ({
     const state = EditorState.create({
       doc: initialValue,
       extensions: [
-        basicSetup,
+        // basicSetup, // Removed as @codemirror/basic-setup was removed
         markdown(),
-        syntaxHighlighting(markdownHighlightStyle),
+        // syntaxHighlighting(markdownHighlightStyle), // Removed as @codemirror/highlight was removed
         editorTheme,
-        editorKeymap, // 使用自定义快捷键
+        EditorState.tabSize.of(2), // Added for basic functionality, can be configured
+        EditorView.lineWrapping, // Added for basic functionality
+        keymap.of(editorKeymap), // Ensure editorKeymap is correctly defined and imported
         EditorView.updateListener.of((update) => {
           if (update.docChanged && onChange) {
             onChange(update.state.doc.toString());
@@ -172,7 +117,7 @@ export const MarkdownEditorCore = ({
     editorViewRef.current.dispatch({
       effects: [
         EditorView.theme.reconfigure(editorTheme),
-        syntaxHighlighting(markdownHighlightStyle).reconfigure(),
+        // syntaxHighlighting(markdownHighlightStyle).reconfigure(), // Removed
       ],
     });
   }, [isDarkMode]);

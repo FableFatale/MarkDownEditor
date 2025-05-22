@@ -59,7 +59,8 @@
     |—— Heroicons / Lucide Icons (比 FontAwesome 更轻)
 |—— 微交互
     |—— framer-motion (动效库，极轻巧)
-|—— 响应式布局
+    |—— 自适应布局
+|—— 现代化的交互模式
     |—— Tailwind Flex/Grid 体系 (完美支持手机平板)
 |—— 全屏/专注模式
     |—— Tailwind 自定义布局 + screenfull.js (全屏切换库)
@@ -67,6 +68,7 @@
     |—— Tailwind config.js 动态切换颜色、字体
 |—— 多种布局
     |—— 自定义 Editor、Preview 分栏，支持调整大小 (react-resizable)
+    |—— 自动生成的导航和目录结构
 
 ## 🚀 5. 性能与优化
 |—— 大文件优化
