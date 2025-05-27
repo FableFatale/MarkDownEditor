@@ -8,7 +8,11 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "clean": "rimraf node_modules/.vite && vite --force",
-    "test": "npx jest"
+    "test": "npx jest",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:debug": "npx playwright test --debug"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -65,15 +69,22 @@
     "@babel/core": "^7.27.1",
     "@babel/preset-env": "^7.27.2",
     "@babel/preset-react": "^7.27.1",
-    "@tailwindcss/postcss": "^4.1.7",
+    "@babel/preset-typescript": "^7.27.1",
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/typography": "^0.5.10",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.21",
     "babel-jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "playwright": "^1.52.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.1",
+    "ts-jest": "^29.3.4",
     "typescript": "^5.8.3",
     "vite": "^6.3.2"
   }

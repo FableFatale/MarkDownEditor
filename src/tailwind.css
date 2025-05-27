@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@tailwind variants;
 
 /* 自定义样式 */
 @layer base {
@@ -39,7 +40,7 @@
            bg-white/90 dark:bg-gray-800/90
            backdrop-blur-xl backdrop-saturate-150
            border-b border-gray-200/30 dark:border-gray-600/30
-           shadow-sm hover:shadow-md dark:shadow-glass-dark
+           shadow-sm hover:shadow-md
            px-4 py-2.5 animate-slide-in
            transition-all duration-300 ease-out;
     top: 0;

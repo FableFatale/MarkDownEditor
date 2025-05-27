@@ -1,316 +1,86 @@
-import { useState, useRef, useMemo, useEffect, Component, ReactNode } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-// 导入类型定义
-import { Category, Article } from './types/article';
-import { Version } from './types/version';
-import { CollaborationUser, CollaborationState, TextOperation } from './types/collaboration';
-
-// 导入组件
-import { CategoryManager } from './components/CategoryManager';
-import { ArticleManager } from './components/ArticleManager';
-import { ImageUploader } from './components/ImageUploader';
-import { VersionManager } from './components/VersionManager';
-import { CoverGenerator } from './components/CoverGenerator';
-import { VideoLinkManager } from './components/VideoLinkManager';
-import { AuthManager } from './components/AuthManager';
-import { LargeFileEditor } from './components/LargeFileEditor';
-import Toolbar from './components/Toolbar';
-import { MarkdownEditorContainer } from './components/editor/MarkdownEditorContainer';
-
-// 导入服务
-import { syncService } from './services/syncService';
-import { versionService } from './services/versionService';
-import { collaborationService } from './services/collaborationService';
-import { offlineService } from './services/offlineService';
-
-// 导入Material UI相关组件和工具
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
-  Container,
-  Box,
   CssBaseline,
-  Grid,
-  Paper,
-  Button,
-  IconButton,
-  Stack,
-  Divider,
-  Tooltip,
-  Typography,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  Box,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  List,
-  ListItemButton,
-  Drawer,
-  alpha,
-  CircularProgress,
-  Alert
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Switch,
+  Slider,
+  Snackbar,
+  Alert,
+  Button,
+  Typography
 } from '@mui/material';
-import { AccountCircle, Login } from '@mui/icons-material';
-import {
-  FormatBold,
-  FormatItalic,
-  FormatListBulleted,
-  FormatListNumbered,
-  Code,
-  FormatStrikethrough,
-  TitleRounded,
-  InsertLink,
-  ImageRounded,
-  PictureAsPdfRounded,
-  FolderRounded,
-  SaveRounded,
-  DarkMode,
-  LightMode,
-  HistoryRounded,
-  KeyboardTabRounded,
-  CloseRounded,
-  FullscreenRounded,
-  FullscreenExitRounded,
-  MenuRounded,
-  FunctionsRounded,
-  BrokenImageRounded,
-  VideoLibraryRounded
-} from '@mui/icons-material';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeSlug from 'rehype-slug';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import './markdown-styles.css';
-import 'highlight.js/styles/github.css';
-import 'highlight.js/styles/github-dark.css';
+import { alpha } from '@mui/material/styles';
+import Toolbar from './components/Toolbar';
+import { MarkdownEditorContainer } from './components/editor/MarkdownEditorContainer';
 
-// Helper function to count words (handles CJK characters better)
-const countWords = (text: string): number => {
-  // Remove leading/trailing whitespace and split by spaces or CJK characters
-  const trimmedText = text.trim();
-  if (!trimmedText) return 0;
-  // Match sequences of non-whitespace characters (including CJK)
-  const words = trimmedText.match(/\S+/g);
-  return words ? words.length : 0;
-};
+const App: React.FC = () => {
+  // 基本状态
+  const [value, setValue] = useState(`# 欢迎使用 Markdown 编辑器
 
+这是一个功能完整的 Markdown 编辑器，支持：
 
+## 功能特性
 
-function App() {
-  // 类型定义
-  interface OutlineItem {
-    id: string;
-    text: string;
-    level: number;
-  }
+- **实时预览**：左右分屏实时预览
+- **主题切换**：支持明暗主题
+- **全屏模式**：专注写作体验
+- **字数统计**：实时显示字数、字符数
+- **设置系统**：完整的主题和布局设置
 
-  // 加载状态管理
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
+## 快捷键
 
-  // 状态管理
-  const [value, setValue] = useState('# 欢迎使用 Markdown 编辑器\n\n这是一个简单的示例文档。您可以开始编写您的内容了！');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [currentArticleId, setCurrentArticleId] = useState<string | null>(null);
+- **Ctrl+B**：粗体
+- **Ctrl+I**：斜体
+- **Ctrl+K**：插入链接
+
+## 代码示例
+
+\`\`\`javascript
+function hello() {
+  console.log("Hello, World!");
+}
+\`\`\`
+
+开始使用这个强大的 Markdown 编辑器吧！`);
+
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
-  const [recentFiles, setRecentFiles] = useState<string[]>([]);
-  const [recentFilesAnchorEl, setRecentFilesAnchorEl] = useState<null | HTMLElement>(null);
-  const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
-  const [lineCount, setLineCount] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
-  const [isImageUploaderOpen, setIsImageUploaderOpen] = useState(false);
-  const [isVersionManagerOpen, setIsVersionManagerOpen] = useState(false);
-  const [versions, setVersions] = useState<Version[]>([]);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [collaborationState, setCollaborationState] = useState<CollaborationState>(collaborationService.getState());
-  const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
-  const [isCoverGeneratorOpen, setIsCoverGeneratorOpen] = useState(false);
-  const [isVideoLinkManagerOpen, setIsVideoLinkManagerOpen] = useState(false);
 
-  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
+  // 设置对话框状态
+  const [themeDialogOpen, setThemeDialogOpen] = useState(false);
+  const [layoutDialogOpen, setLayoutDialogOpen] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
-  // 引用和常量
+  // 主题设置状态
+  const [fontSize, setFontSize] = useState(14);
+  const [lineHeight, setLineHeight] = useState(1.5);
+  const [autoSave, setAutoSave] = useState(true);
+
+  // 布局设置状态
+  const [editorWidth, setEditorWidth] = useState(50);
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [wordWrap, setWordWrap] = useState(true);
+
+  // 预览区域引用，用于PDF导出
   const previewRef = useRef<HTMLDivElement>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
-  const drawerWidth = 240;
-  const recentFilesOpen = Boolean(recentFilesAnchorEl);
-
-
-
-  // 大纲相关函数
-  const toggleOutline = () => {
-    setIsOutlineOpen((prev) => !prev);
-  };
-
-  // 分类管理相关函数
-  const handleAddCategory = (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newCategory: Category = {
-      id: uuidv4(),
-      ...categoryData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    setCategories([...categories, newCategory]);
-  };
-
-  const handleEditCategory = (updatedCategory: Category) => {
-    setCategories(categories.map(cat =>
-      cat.id === updatedCategory.id ? updatedCategory : cat
-    ));
-  };
-
-  const handleDeleteCategory = (categoryId: string) => {
-    setCategories(categories.filter(cat => cat.id !== categoryId));
-    // 同时更新所有包含该分类的文章
-    setArticles(articles.map(article => ({
-      ...article,
-      categories: article.categories.filter(id => id !== categoryId)
-    })));
-  };
-
-  // 文章管理相关函数
-  const handleCreateArticle = () => {
-    const newArticle: Article = {
-      id: uuidv4(),
-      title: '新文章',
-      content: '',
-      categories: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      wordCount: 0,
-      charCount: 0
-    };
-    setArticles([...articles, newArticle]);
-    setCurrentArticleId(newArticle.id);
-    setValue('');
-  };
-
-  const handleArticleEdit = async (articleId: string) => {
-    const article = articles.find(a => a.id === articleId);
-    if (article) {
-      setCurrentArticleId(articleId);
-      setValue(article.content);
-      // 加载文章的版本历史
-      const articleVersions = await versionService.getVersionsByArticle(articleId);
-      setVersions(articleVersions);
-    }
-  };
-
-  // 自动保存功能
-  useEffect(() => {
-    if (!currentArticleId) return;
-
-    let autoSaveTimer: number;
-
-    const saveCurrentArticle = () => {
-      if (currentArticleId && value) {
-        const currentArticle = articles.find(a => a.id === currentArticleId);
-        if (currentArticle) {
-          const updatedArticle = {
-            ...currentArticle,
-            content: value,
-            wordCount: countWords(value),
-            charCount: value.length,
-            updatedAt: new Date()
-          };
-          setArticles(prevArticles =>
-            prevArticles.map(a => a.id === currentArticleId ? updatedArticle : a)
-          );
-        }
-      }
-    };
-
-    // 立即执行一次保存
-    saveCurrentArticle();
-
-    // 设置定时器
-    autoSaveTimer = setInterval(saveCurrentArticle, 30000); // 每30秒自动保存一次
-
-    return () => {
-      if (autoSaveTimer) clearInterval(autoSaveTimer);
-    };
-  }, [currentArticleId, value, articles]);
-
-  // 数据同步相关函数
-  const handleSync = async () => {
-    try {
-      setIsSyncing(true);
-
-      // 获取上次同步时间后的修改数据
-      const lastSyncTime = new Date(localStorage.getItem('lastSyncTime') || '0');
-      const modifiedArticles = await offlineService.getModifiedArticles(lastSyncTime);
-      const modifiedCategories = await offlineService.getModifiedCategories(lastSyncTime);
-
-      // 同步分类
-      const categoryResult = await syncService.syncCategories(modifiedCategories);
-      if (!categoryResult.success) {
-        throw new Error(categoryResult.error || '分类同步失败');
-      }
-
-      // 同步文章
-      const articleResult = await syncService.syncArticles(modifiedArticles);
-      if (!articleResult.success) {
-        throw new Error(articleResult.error || '文章同步失败');
-      }
-
-      // 更新同步时间
-      localStorage.setItem('lastSyncTime', new Date().toISOString());
-
-      // 清理过期的离线数据（保留最近30天的数据）
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      await offlineService.cleanupOldData(thirtyDaysAgo);
-    } catch (error) {
-      console.error('同步失败:', error);
-      throw error;
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   // 主题切换
   const toggleTheme = () => {
     const newMode = themeMode === 'light' ? 'dark' : 'light';
     setThemeMode(newMode);
     localStorage.setItem('theme-mode', newMode);
-    // 触发主题切换动画
-    document.documentElement.style.transition = 'background-color 0.3s ease-in-out';
-    document.documentElement.style.backgroundColor =
-      newMode === 'light' ? theme.palette.background.default : theme.palette.background.paper;
   };
-
-  // 初始化主题
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme-mode') as 'light' | 'dark' | null;
-    if (savedTheme) {
-      setThemeMode(savedTheme);
-    } else {
-      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setThemeMode(prefersDarkMode ? 'dark' : 'light');
-    }
-
-    // 监听系统主题变化
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleThemeChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('theme-mode')) {
-        setThemeMode(e.matches ? 'dark' : 'light');
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleThemeChange);
-    return () => mediaQuery.removeEventListener('change', handleThemeChange);
-  }, []);
 
   // 全屏切换
   const toggleFullScreen = () => {
@@ -336,43 +106,99 @@ function App() {
     };
   }, []);
 
-  // 图片上传处理
-  const handleImageUpload = (imageUrl: string) => {
-    const imageMarkdown = `![](${imageUrl})`;
-    if (editorRef.current?.view) {
-      const view = editorRef.current.view;
-      const pos = view.state.selection.main.head;
-      view.dispatch({
-        changes: { from: pos, insert: imageMarkdown + '\n' }
-      });
+  // 初始化主题
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme-mode') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setThemeMode(savedTheme);
+    } else {
+      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setThemeMode(prefersDarkMode ? 'dark' : 'light');
     }
-    setIsImageUploaderOpen(false);
+  }, []);
+
+  // 设置处理函数
+  const handleThemeSettings = () => {
+    setThemeDialogOpen(true);
   };
 
-  // 封面图处理
-  const handleCoverSave = (coverUrl: string) => {
-    const coverMarkdown = `![封面图](${coverUrl})`;
-    if (editorRef.current?.view) {
-      // 确保 editorRef.current 存在且具有 view 属性
-      const view = (editorRef.current as any)?.view;
-      const pos = view.state.selection.main.head;
-      view.dispatch({
-        changes: { from: pos, insert: coverMarkdown + '\n' }
-      });
-    }
-    setIsCoverGeneratorOpen(false);
+  const handleLayoutSettings = () => {
+    setLayoutDialogOpen(true);
   };
 
-  // 视频链接处理
-  const handleVideoLinkInsert = (markdown: string) => {
-    if (editorRef.current?.view) {
-      const view = editorRef.current.view;
-      const pos = view.state.selection.main.head;
-      view.dispatch({
-        changes: { from: pos, insert: markdown + '\n' }
-      });
+  const handleThemeDialogClose = () => {
+    setThemeDialogOpen(false);
+  };
+
+  const handleLayoutDialogClose = () => {
+    setLayoutDialogOpen(false);
+  };
+
+  const handleSaveThemeSettings = () => {
+    setSnackbarMessage('主题设置已保存');
+    setSnackbarOpen(true);
+    setThemeDialogOpen(false);
+  };
+
+  const handleSaveLayoutSettings = () => {
+    setSnackbarMessage('布局设置已保存');
+    setSnackbarOpen(true);
+    setLayoutDialogOpen(false);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  // 格式化文本处理
+  const handleFormatText = (format: string) => {
+    let formatText = '';
+    let needsNewLine = false;
+
+    switch (format) {
+      case 'bold':
+        formatText = '**粗体文本**';
+        break;
+      case 'italic':
+        formatText = '*斜体文本*';
+        break;
+      case 'quote':
+        formatText = '> 引用文本';
+        needsNewLine = true;
+        break;
+      case 'code':
+        formatText = '```\n代码块\n```';
+        needsNewLine = true;
+        break;
+      case 'link':
+        formatText = '[链接文本](URL)';
+        break;
+      case 'image':
+        formatText = '![图片描述](图片URL)';
+        break;
+      case 'table':
+        formatText = '| 列1 | 列2 | 列3 |\n|-----|-----|-----|\n| 内容1 | 内容2 | 内容3 |';
+        needsNewLine = true;
+        break;
+      case 'bullet-list':
+        formatText = '- 列表项1\n- 列表项2\n- 列表项3';
+        needsNewLine = true;
+        break;
+      case 'number-list':
+        formatText = '1. 列表项1\n2. 列表项2\n3. 列表项3';
+        needsNewLine = true;
+        break;
+      default:
+        return;
     }
-    setIsVideoLinkManagerOpen(false);
+
+    // 智能插入：如果需要新行且当前内容不为空，则在前面添加换行
+    const currentContent = value;
+    const insertText = needsNewLine && currentContent && !currentContent.endsWith('\n')
+      ? '\n' + formatText
+      : formatText;
+
+    setValue(prev => prev + insertText);
   };
 
   // 主题配置
@@ -395,228 +221,28 @@ function App() {
             secondary: themeMode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
           },
         },
-        transitions: {
-          duration: {
-            shortest: 150,
-            shorter: 200,
-            short: 250,
-            standard: 300,
-            complex: 375,
-            enteringScreen: 225,
-            leavingScreen: 195,
-          },
-          easing: {
-            easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-            easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
-            easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-            sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
-          },
-        },
         components: {
-          MuiToolbar: {
-            styleOverrides: {
-              root: {
-                backdropFilter: 'blur(12px)',
-                backgroundColor: alpha(themeMode === 'light' ? '#FFFFFF' : '#1A1B1E', 0.85),
-                borderBottom: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`,
-                height: 48,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 12px',
-                gap: '6px',
-                '& .MuiIconButton-root': {
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  margin: '0 2px',
-                  width: 28,
-                  height: 28,
-                  borderRadius: 4,
-                  color: themeMode === 'light' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)',
-                  '&:hover': {
-                    backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.06),
-                    transform: 'translateY(-1px)',
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
-                  },
-                },
-                '& .MuiButton-root': {
-                  borderRadius: 6,
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  height: 28,
-                  minWidth: 80,
-                  padding: '0 12px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  color: themeMode === 'light' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)',
-                  '&:hover': {
-                    backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.06),
-                    transform: 'translateY(-1px)',
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
-                  },
-                },
-                '& .auth-buttons': {
-                  marginLeft: 'auto',
-                  display: 'flex',
-                  gap: '12px',
-                  opacity: isFullScreen ? 0 : 1,
-                  visibility: isFullScreen ? 'hidden' : 'visible',
-                  transition: 'all 0.2s ease-in-out',
-                },
-              },
-            },
-          },
           MuiIconButton: {
             styleOverrides: {
               root: {
                 borderRadius: 4,
-                width: 28,
-                height: 28,
-                padding: '4px',
-                color: themeMode === 'light' ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)',
                 transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.06),
                   transform: 'translateY(-1px)',
-                },
-                '&:active': {
-                  transform: 'scale(0.98)',
-                },
-                '&.Mui-selected': {
-                  backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.08),
-                  '&:hover': {
-                    backgroundColor: alpha(themeMode === 'light' ? '#000000' : '#FFFFFF', 0.12),
-                  },
-                },
-              },
-            },
-          },
-          MuiButton: {
-            styleOverrides: {
-              root: {
-                minWidth: 80,
-                height: 28,
-                padding: '0 12px',
-                fontSize: '0.875rem',
-                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  transform: 'translateY(-1px)',
-                },
-                '&:active': {
-                  transform: 'scale(0.98)',
-                },
-              },
-              contained: {
-                boxShadow: 'none',
-                '&:hover': {
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                },
-              },
-            },
-          },
-          MuiCard: {
-            styleOverrides: {
-              root: {
-                borderRadius: 8,
-                border: `1px solid ${themeMode === 'light' ? '#E5E7EB' : '#2D2E32'}`,
-                boxShadow: 'none',
-                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: themeMode === 'light'
-                    ? '0 4px 12px rgba(0, 0, 0, 0.05)'
-                    : '0 4px 12px rgba(0, 0, 0, 0.2)',
-                },
-              },
-            },
-          },
-          // 确保文本字段正确渲染
-          MuiTextField: {
-            styleOverrides: {
-              root: {
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: themeMode === 'light' ? 'rgba(0, 0, 0, 0.23)' : 'rgba(255, 255, 255, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: themeMode === 'light' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#5E6AD2',
-                  },
                 },
               },
             },
           },
         },
       }),
-    [themeMode, isFullScreen],
+    [themeMode],
   );
-
-  // 初始化数据加载
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        setIsLoading(true);
-        // 这里可以添加其他初始化逻辑
-        const savedTheme = localStorage.getItem('theme-mode') as 'light' | 'dark' | null;
-        if (savedTheme) {
-          setThemeMode(savedTheme);
-        } else {
-          const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          setThemeMode(prefersDarkMode ? 'dark' : 'light');
-        }
-      } catch (error) {
-        setLoadingError(error instanceof Error ? error.message : '初始化失败');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          bgcolor: theme.palette.background.default
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (loadingError) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          bgcolor: theme.palette.background.default
-        }}
-      >
-        <Alert severity="error" sx={{ maxWidth: 400 }}>
-          {loadingError}
-        </Alert>
-      </Box>
-    );
-  }
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-        <Toolbar content={value} />
         <Box
           className={`editor-container ${isFullScreen ? 'fullscreen' : ''}`}
           sx={{
@@ -626,13 +252,12 @@ function App() {
             borderRadius: 2,
             overflow: 'hidden',
             bgcolor: 'background.paper',
-            height: 'calc(100vh - 64px)',
-            maxHeight: '900px',
+            height: '100vh',
             position: 'relative',
             boxShadow: themeMode === 'light' ? '0 2px 12px rgba(0, 0, 0, 0.1)' : '0 2px 12px rgba(0, 0, 0, 0.3)',
             transition: 'all 0.3s ease-in-out',
             mx: 'auto',
-            my: 2,
+            my: 1,
             maxWidth: '1600px',
             width: '100%',
             '&.fullscreen': {
@@ -644,76 +269,145 @@ function App() {
             }
           }}
         >
+          {/* 集成工具栏到编辑器内部 */}
+          <Toolbar
+            content={value}
+            themeMode={themeMode}
+            isFullScreen={isFullScreen}
+            onToggleTheme={toggleTheme}
+            onToggleFullScreen={toggleFullScreen}
+            onThemeSettings={handleThemeSettings}
+            onLayoutSettings={handleLayoutSettings}
+            previewRef={previewRef}
+            onFormatText={handleFormatText}
+          />
+
           {/* 使用新的MarkdownEditorContainer组件 */}
           <MarkdownEditorContainer
             initialValue={value}
             onContentChange={setValue}
             className="flex-1"
+            previewRef={previewRef}
+            onFormatText={handleFormatText}
           />
         </Box>
+
+        {/* 主题设置对话框 */}
+        <Dialog open={themeDialogOpen} onClose={handleThemeDialogClose} maxWidth="sm" fullWidth>
+          <DialogTitle>主题设置</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2 }}>
+              <FormControl component="fieldset" sx={{ mb: 3 }}>
+                <FormLabel component="legend">主题模式</FormLabel>
+                <RadioGroup
+                  value={themeMode}
+                  onChange={(e) => setThemeMode(e.target.value as 'light' | 'dark')}
+                >
+                  <FormControlLabel value="light" control={<Radio />} label="浅色模式" />
+                  <FormControlLabel value="dark" control={<Radio />} label="深色模式" />
+                </RadioGroup>
+              </FormControl>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography gutterBottom>字体大小: {fontSize}px</Typography>
+                <Slider
+                  value={fontSize}
+                  onChange={(_, value) => setFontSize(value as number)}
+                  min={12}
+                  max={20}
+                  step={1}
+                  marks
+                />
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography gutterBottom>行高: {lineHeight}</Typography>
+                <Slider
+                  value={lineHeight}
+                  onChange={(_, value) => setLineHeight(value as number)}
+                  min={1.2}
+                  max={2.0}
+                  step={0.1}
+                  marks
+                />
+              </Box>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={autoSave}
+                    onChange={(e) => setAutoSave(e.target.checked)}
+                  />
+                }
+                label="自动保存"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleThemeDialogClose}>取消</Button>
+            <Button onClick={handleSaveThemeSettings} variant="contained">保存</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* 布局设置对话框 */}
+        <Dialog open={layoutDialogOpen} onClose={handleLayoutDialogClose} maxWidth="sm" fullWidth>
+          <DialogTitle>布局设置</DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2 }}>
+              <Box sx={{ mb: 3 }}>
+                <Typography gutterBottom>编辑器宽度: {editorWidth}%</Typography>
+                <Slider
+                  value={editorWidth}
+                  onChange={(_, value) => setEditorWidth(value as number)}
+                  min={30}
+                  max={70}
+                  step={5}
+                  marks
+                />
+              </Box>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showLineNumbers}
+                    onChange={(e) => setShowLineNumbers(e.target.checked)}
+                  />
+                }
+                label="显示行号"
+                sx={{ mb: 2 }}
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={wordWrap}
+                    onChange={(e) => setWordWrap(e.target.checked)}
+                  />
+                }
+                label="自动换行"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleLayoutDialogClose}>取消</Button>
+            <Button onClick={handleSaveLayoutSettings} variant="contained">保存</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* 消息提示 */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={3000}
+          onClose={handleSnackbarClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </Box>
     </ThemeProvider>
   );
-}
+};
 
-// 错误边界组件
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('错误边界捕获到错误:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            padding: 3,
-            bgcolor: 'background.default'
-          }}
-        >
-          <Alert
-            severity="error"
-            sx={{
-              maxWidth: 600,
-              width: '100%',
-              mb: 2
-            }}
-          >
-            应用程序遇到了问题
-          </Alert>
-          <Button
-            variant="contained"
-            onClick={() => window.location.reload()}
-          >
-            刷新页面
-          </Button>
-        </Box>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-// 包装App组件
-const AppWithErrorBoundary = () => (
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
-
-export default AppWithErrorBoundary;
+export default App;

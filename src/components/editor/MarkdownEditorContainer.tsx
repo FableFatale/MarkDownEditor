@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { MarkdownEditorCore } from './MarkdownEditorCore';
 import { MarkdownPreview } from './MarkdownPreview';
 import { Resizable } from 'react-resizable';
@@ -16,6 +16,8 @@ interface MarkdownEditorContainerProps {
   className?: string;
   onContentChange?: (content: string) => void;
   largeFileThreshold?: number; // Size threshold in characters to use large file editor
+  previewRef?: React.RefObject<HTMLDivElement>;
+  onFormatText?: (format: string) => void;
 }
 
 export const MarkdownEditorContainer = ({
@@ -23,6 +25,8 @@ export const MarkdownEditorContainer = ({
   className = '',
   onContentChange,
   largeFileThreshold = 100000, // Default to 100KB (approximately 100,000 characters)
+  previewRef: externalPreviewRef,
+  onFormatText
 }: MarkdownEditorContainerProps) => {
   const theme = useTheme();
   const [content, setContent] = useState(initialValue);
@@ -32,7 +36,8 @@ export const MarkdownEditorContainer = ({
   const [isPreviewUpdating, setIsPreviewUpdating] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [headingStyle, setHeadingStyle] = useState<string>('default');
-  const previewRef = useRef<HTMLDivElement>(null);
+  const internalPreviewRef = useRef<HTMLDivElement>(null);
+  const previewRef = externalPreviewRef || internalPreviewRef;
 
   // Determine if we should use the large file editor based on content size
   const isLargeFile = useMemo(() => {
@@ -104,8 +109,16 @@ export const MarkdownEditorContainer = ({
     setEditorWidth(newWidth);
   };
 
+  // 设置data-theme属性以支持CSS变量
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme.palette.mode);
+  }, [theme.palette.mode]);
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', position: 'relative' }}>
+    <Box
+      sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', position: 'relative' }}
+      data-theme={theme.palette.mode}
+    >
       {/* 加载状态指示器 */}
       {isLoading && (
         <LinearProgress
@@ -120,39 +133,7 @@ export const MarkdownEditorContainer = ({
         />
       )}
 
-      {/* 工具栏 */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          p: 1,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          bgcolor: theme.palette.background.paper,
-          flexShrink: 0, // 防止工具栏被压缩
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {isLargeFile && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: theme.palette.warning.main,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                fontSize: '0.75rem',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                backgroundColor: theme.palette.warning.light + '20',
-              }}
-            >
-              Large File Mode ({(initialValue.length / 1024).toFixed(1)} KB)
-            </Typography>
-          )}
-        </Box>
-        <PdfExporter contentRef={previewRef} fileName="markdown-document.pdf" />
-      </Box>
+
 
       {/* 编辑器和预览区 - 水平并列布局 */}
       <Box sx={{ display: 'flex', flexDirection: 'row', flex: 1, width: '100%', overflow: 'hidden' }}>
@@ -216,6 +197,7 @@ export const MarkdownEditorContainer = ({
                   onToggleTheme={toggleDarkMode}
                   largeFileThreshold={largeFileThreshold}
                   onLoadingStateChange={handleLoadingStateChange}
+                  onFormatText={onFormatText}
                 />
               </Box>
             </Box>
@@ -230,7 +212,7 @@ export const MarkdownEditorContainer = ({
             height: '100%',
             overflow: 'auto',
             padding: 3,
-            backgroundColor: theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
+            backgroundColor: theme.palette.background.default,
             borderLeft: `1px solid ${theme.palette.divider}`,
             position: 'relative',
             display: 'flex',
@@ -246,7 +228,7 @@ export const MarkdownEditorContainer = ({
               pb: 2,
               position: 'sticky',
               top: 0,
-              backgroundColor: theme.palette.mode === 'dark' ? '#1E1E1E' : '#FFFFFF',
+              backgroundColor: theme.palette.background.default,
               zIndex: 10,
               backdropFilter: 'blur(8px)',
               borderRadius: '4px 4px 0 0',

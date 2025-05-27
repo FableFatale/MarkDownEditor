@@ -1,8 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ThemeProvider } from './theme/ThemeContext'
-// 导入主应用
-import App from './App'
+
 // 保留测试组件以备需要
 import TestComponent from './TestComponent'
 // 导入简单版Markdown编辑器
@@ -21,6 +20,12 @@ import SimpleTailwindTest from './SimpleTailwindTest'
 import MinimalTailwindTest from './MinimalTailwindTest'
 // 导入简单的Tailwind CSS演示组件
 import SimpleTailwindDemo from './SimpleTailwindDemo'
+// 导入单行工具栏编辑器演示
+import SingleRowEditorDemo from './SingleRowEditorDemo'
+// 导入测试页面
+import TestPage from './TestPage'
+// 导入主应用组件
+import App from './App'
 
 // 导入主样式文件
 import './styles/main.css'
@@ -51,13 +56,11 @@ const showTailwind = urlParams.has('tailwind');
 const showSimpleTailwind = urlParams.has('simple-tailwind');
 const showMinimalTailwind = urlParams.has('minimal-tailwind');
 const showSimpleTailwindDemo = urlParams.has('simple-tailwind-demo');
+const showSingleRow = urlParams.has('single-row');
+const showTestPage = urlParams.has('test-page');
 
-// 默认显示App（主应用）
-let componentToRender = (
-  <ThemeProvider>
-    <App />
-  </ThemeProvider>
-);
+// 默认显示主应用程序
+let componentToRender = <App />;
 
 // 根据URL参数决定显示哪个组件
 if (showTest) {
@@ -96,6 +99,10 @@ if (showTest) {
       <SimpleTailwindDemo />
     </ThemeProvider>
   );
+} else if (showSingleRow) {
+  componentToRender = <SingleRowEditorDemo />;
+} else if (showTestPage) {
+  componentToRender = <TestPage />;
 } else if (showArticleManager) {
   componentToRender = <ArticleManagementDemo />;
 }
@@ -110,8 +117,10 @@ if (showTest) {
       showSimpleTailwind ? 'SimpleTailwindTest' :
       showMinimalTailwind ? 'MinimalTailwindTest' :
       showSimpleTailwindDemo ? 'SimpleTailwindDemo' :
+      showSingleRow ? 'SingleRowEditorDemo' :
+      showTestPage ? 'TestPage' :
       showModern ? 'ModernMarkdownEditor' :
-      'MarkdownEditorApp'
+      'App (默认主程序)'
     );
 
     root.render(

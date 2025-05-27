@@ -24,7 +24,7 @@ export const MarkdownPreview = ({
 }: MarkdownPreviewProps) => {
   const theme = useTheme();
   const [internalHeadingStyle, setInternalHeadingStyle] = useState<HeadingStyleType>('default');
-  
+
   // 使用外部传入的headingStyle或内部状态
   const effectiveHeadingStyle = showStyleControls ? internalHeadingStyle : headingStyle;
 
@@ -78,12 +78,18 @@ export const MarkdownPreview = ({
   };
 
   return (
-    <div className={`prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none ${className}`}>
+    <div
+      className={`prose prose-sm md:prose-base lg:prose-lg ${theme.palette.mode === 'dark' ? 'prose-invert' : ''} max-w-none ${className}`}
+      style={{
+        color: theme.palette.text.primary,
+        backgroundColor: 'transparent'
+      }}
+    >
       {showStyleControls && (
         <>
-          <Box sx={{ 
-            mb: 3, 
-            display: 'flex', 
+          <Box sx={{
+            mb: 3,
+            display: 'flex',
             flexDirection: 'column',
             borderBottom: `1px solid ${theme.palette.divider}`,
             pb: 2
@@ -92,7 +98,7 @@ export const MarkdownPreview = ({
               <FormatColorTextIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
               <Typography variant="subtitle1" fontWeight="medium">标题样式设置</Typography>
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Tooltip title="选择不同的标题样式，立即在预览区查看效果">
                 <FormControl size="small" variant="outlined" sx={{ minWidth: 180 }}>

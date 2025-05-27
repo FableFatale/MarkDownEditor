@@ -26,13 +26,13 @@ export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const lastSaveTimeRef = useRef<number>(Date.now());
   const saveIntervalRef = useRef<number>();
-  
+
   // 初始化加载内容
   useEffect(() => {
     // 初始化时设置加载状态
     setIsLoading(true);
     onLoadingChange?.(true);
-    
+
     // 模拟初始加载延迟
     setTimeout(() => {
       // 初始化可见内容
@@ -40,7 +40,12 @@ export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
       setIsLoading(false);
       onLoadingChange?.(false);
     }, 500);
-  }, [content, onLoadingChange]);
+  }, [onLoadingChange]); // 移除content依赖，避免每次content变化都重新初始化
+
+  // 监听外部content变化，同步更新visibleContent
+  useEffect(() => {
+    setVisibleContent(content);
+  }, [content]);
 
   // 自动保存功能
   useEffect(() => {

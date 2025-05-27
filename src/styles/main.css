@@ -5,6 +5,7 @@
 @import './editor-toolbar.css';
 @import './unified-toolbar.css';
 @import './top-toolbar.css';
+@import './single-row-toolbar.css';
 @import '../modern-fonts.css';
 @import '../markdown-styles.css';
 @import '../katex-styles.css';
