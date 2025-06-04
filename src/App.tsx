@@ -150,8 +150,22 @@ function hello() {
     setSnackbarOpen(false);
   };
 
-  // 格式化文本处理
-  const handleFormatText = (format: string) => {
+  // 格式化文本处理 - 支持真正的编辑器联动
+  const handleFormatText = (format: string, options?: any) => {
+    // 首先尝试使用编辑器的格式化功能
+    if ((window as any).editorFormatText) {
+      const success = (window as any).editorFormatText(format, options);
+      if (success) {
+        return; // 如果编辑器格式化成功，直接返回
+      }
+    }
+
+    // 回退到简单的文本追加方案
+    handleSimpleFormat(format, options);
+  };
+
+  // 简单的格式化处理（回退方案）
+  const handleSimpleFormat = (format: string, options?: any) => {
     let formatText = '';
     let needsNewLine = false;
 
@@ -175,6 +189,14 @@ function hello() {
         break;
       case 'image':
         formatText = '![图片描述](图片URL)';
+        break;
+      case 'custom-image':
+        if (options?.imageUrl) {
+          const altText = options.altText || '图片描述';
+          formatText = `![${altText}](${options.imageUrl})`;
+        } else {
+          formatText = '![图片描述](图片URL)';
+        }
         break;
       case 'table':
         formatText = '| 列1 | 列2 | 列3 |\n|-----|-----|-----|\n| 内容1 | 内容2 | 内容3 |';

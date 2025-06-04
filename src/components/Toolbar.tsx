@@ -28,13 +28,16 @@ import {
   Code,
   InsertLink,
   Image,
-  TableChart,
+  GridOn,
   FormatListBulleted,
   FormatListNumbered,
-  GetApp
+  GetApp,
+  CloudUpload,
+  PhotoCamera
 } from '@mui/icons-material';
 import WordCounter from './WordCounter';
 import PdfExporter from './PdfExporter';
+import { ImageUploadDialog } from './ImageUploadDialog';
 
 interface ToolbarProps {
   content: string;
@@ -62,6 +65,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const theme = useTheme();
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
+  const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const settingsOpen = Boolean(settingsAnchorEl);
   const exportOpen = Boolean(exportAnchorEl);
 
@@ -81,7 +85,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
         { icon: <Code />, tooltip: '代码块', format: 'code' },
         { icon: <InsertLink />, tooltip: '链接 (Ctrl+K)', format: 'link' },
         { icon: <Image />, tooltip: '图片', format: 'image' },
-        { icon: <TableChart />, tooltip: '表格', format: 'table' },
+        { icon: <CloudUpload />, tooltip: '上传图片 (支持拖拽和粘贴)', format: 'upload-image' },
+        { icon: <GridOn />, tooltip: '表格', format: 'table' },
       ],
     },
     {
@@ -206,6 +211,39 @@ ${previewRef?.current?.innerHTML || ''}
     handleSettingsClose();
   };
 
+  // 处理图片上传
+  const handleImageUpload = () => {
+    setImageUploadOpen(true);
+  };
+
+  const handleImageUploadClose = () => {
+    setImageUploadOpen(false);
+  };
+
+  const handleImageInsert = (imageUrl: string, altText?: string) => {
+    // 插入图片到编辑器
+    if ((window as any).editorFormatText) {
+      // 使用编辑器的插入功能
+      const success = (window as any).editorInsertImage?.(imageUrl, altText);
+      if (!success) {
+        // 回退到格式化文本方式
+        onFormatText?.('custom-image', { imageUrl, altText });
+      }
+    } else {
+      // 回退方案
+      onFormatText?.('custom-image', { imageUrl, altText });
+    }
+  };
+
+  // 处理格式化文本（包括图片上传）
+  const handleFormatText = (format: string) => {
+    if (format === 'upload-image') {
+      handleImageUpload();
+    } else {
+      onFormatText?.(format);
+    }
+  };
+
   return (
     <AppBar
       position="sticky"
@@ -274,7 +312,7 @@ ${previewRef?.current?.innerHTML || ''}
                 >
                   <IconButton
                     size="small"
-                    onClick={() => onFormatText?.(item.format)}
+                    onClick={() => handleFormatText(item.format)}
                     sx={{
                       width: 32,
                       height: 32,
@@ -663,6 +701,13 @@ ${previewRef?.current?.innerHTML || ''}
               <ListItemText>导出为文本</ListItemText>
             </MenuItem>
           </Menu>
+
+          {/* 图片上传对话框 */}
+          <ImageUploadDialog
+            open={imageUploadOpen}
+            onClose={handleImageUploadClose}
+            onImageInsert={handleImageInsert}
+          />
         </Box>
       </Container>
     </AppBar>

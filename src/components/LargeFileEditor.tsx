@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, CircularProgress } from '@mui/material';
-import { VirtualScroll } from './VirtualScroll';
 import { ChunkManager } from '../services/chunkManager';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicLight, basicDark } from '@uiw/codemirror-theme-basic';
+import { useEditorFormat } from '../hooks/useEditorFormat';
 
 interface LargeFileEditorProps {
   content: string;
@@ -12,6 +12,7 @@ interface LargeFileEditorProps {
   theme: 'light' | 'dark';
   height?: number | string;
   onLoadingChange?: (isLoading: boolean) => void;
+  onFormatText?: (format: string) => void;
 }
 
 export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
@@ -20,12 +21,27 @@ export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
   theme,
   height = '100%',
   onLoadingChange,
+  onFormatText,
 }) => {
   const [chunkManager] = useState(() => new ChunkManager(content));
   const [visibleContent, setVisibleContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const lastSaveTimeRef = useRef<number>(Date.now());
   const saveIntervalRef = useRef<number>();
+
+  // 使用编辑器格式化 hook
+  const { setEditorView, formatText, insertImage } = useEditorFormat({
+    onContentChange: onChange
+  });
+
+  // 处理外部格式化请求
+  useEffect(() => {
+    if (onFormatText) {
+      // 创建一个全局的格式化函数
+      (window as any).editorFormatText = formatText;
+      (window as any).editorInsertImage = insertImage;
+    }
+  }, [onFormatText, formatText, insertImage]);
 
   // 初始化加载内容
   useEffect(() => {
@@ -75,43 +91,11 @@ export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
   // 处理编辑器内容变化
   const handleChange = useCallback(
     (value: string) => {
-      // 将变更应用到块管理器
-      const operation = {
-        offset: 0, // 需要根据实际光标位置计算
-        text: value,
-        length: visibleContent.length,
-      };
-      setIsLoading(true);
-      onLoadingChange?.(true);
-      try {
-        chunkManager.applyOperation(operation);
-        setVisibleContent(value);
-        onChange(value);
-      } finally {
-        setIsLoading(false);
-        onLoadingChange?.(false);
-      }
+      // 简化处理，直接更新内容
+      setVisibleContent(value);
+      onChange(value);
     },
-    [chunkManager, onChange, visibleContent, onLoadingChange]
-  );
-
-  // 处理滚动事件，加载可见区域的文本块
-  const handleScroll = useCallback(
-    async (scrollTop: number) => {
-      setIsLoading(true);
-      onLoadingChange?.(true);
-      try {
-        const chunk = chunkManager.getChunkAtOffset(scrollTop);
-        if (chunk && !chunk.isLoaded) {
-          await chunkManager.loadChunk(chunk.id);
-          setVisibleContent(chunkManager.getContent());
-        }
-      } finally {
-        setIsLoading(false);
-        onLoadingChange?.(false);
-      }
-    },
-    [chunkManager, onLoadingChange]
+    [onChange]
   );
 
   return (
@@ -133,6 +117,9 @@ export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
         extensions={[markdown()]}
         theme={theme === 'dark' ? basicDark : basicLight}
         onChange={handleChange}
+        onCreateEditor={(view) => {
+          setEditorView(view);
+        }}
         style={{ fontSize: '16px' }}
       />
     </Box>

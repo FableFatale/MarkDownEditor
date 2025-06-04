@@ -117,6 +117,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
               onChange={onChange}
               theme={isDarkMode ? 'dark' : 'light'}
               onLoadingChange={handleLoadingChange}
+              onFormatText={onFormatText}
             />
           </Box>
         </Box>
