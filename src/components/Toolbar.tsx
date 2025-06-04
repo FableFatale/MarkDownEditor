@@ -251,95 +251,69 @@ ${previewRef?.current?.innerHTML || ''}
       >
 
         {/* 左侧格式化工具栏 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1 }}>
           {formatToolbarGroups.map((group, groupIndex) => (
             <React.Fragment key={groupIndex}>
-              {groupIndex > 0 && (
-                <Divider
-                  orientation="vertical"
-                  flexItem
-                  sx={{
-                    mx: 1,
-                    height: 24,
-                    borderColor: alpha(theme.palette.divider, 0.3),
-                    borderWidth: 1,
-                    borderRadius: 0.5,
-                    background: `linear-gradient(to bottom, transparent, ${alpha(theme.palette.divider, 0.4)}, transparent)`,
+              {group.items.map((item, itemIndex) => (
+                <Tooltip
+                  key={`${groupIndex}-${itemIndex}`}
+                  title={item.tooltip}
+                  placement="bottom"
+                  arrow
+                  componentsProps={{
+                    tooltip: {
+                      sx: {
+                        bgcolor: alpha(theme.palette.grey[900], 0.9),
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        borderRadius: 1,
+                        backdropFilter: 'blur(10px)',
+                      }
+                    }
                   }}
-                />
-              )}
-              <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                p: 0.5,
-                borderRadius: 1.5,
-                transition: theme.transitions.create(['background-color']),
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                }
-              }}>
-                {group.items.map((item, itemIndex) => (
-                  <Tooltip
-                    key={itemIndex}
-                    title={item.tooltip}
-                    placement="bottom"
-                    arrow
-                    componentsProps={{
-                      tooltip: {
-                        sx: {
-                          bgcolor: alpha(theme.palette.grey[900], 0.9),
-                          color: 'white',
-                          fontSize: '0.75rem',
-                          borderRadius: 1,
-                          backdropFilter: 'blur(10px)',
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => onFormatText?.(item.format)}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1.5,
+                      position: 'relative',
+                      transition: theme.transitions.create([
+                        'background-color',
+                        'transform',
+                        'box-shadow',
+                        'color'
+                      ], {
+                        duration: 200,
+                        easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                      }),
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                        transform: 'translateY(-1px) scale(1.05)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                        color: theme.palette.primary.main,
+                        '& svg': {
+                          transform: 'scale(1.1)',
                         }
+                      },
+                      '&:active': {
+                        transform: 'translateY(0) scale(0.98)',
+                        boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
+                      },
+                      '& svg': {
+                        fontSize: '1.1rem',
+                        transition: theme.transitions.create(['transform', 'color'], {
+                          duration: 200
+                        })
                       }
                     }}
                   >
-                    <IconButton
-                      size="small"
-                      onClick={() => onFormatText?.(item.format)}
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 1.5,
-                        position: 'relative',
-                        transition: theme.transitions.create([
-                          'background-color',
-                          'transform',
-                          'box-shadow',
-                          'color'
-                        ], {
-                          duration: 200,
-                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                        }),
-                        '&:hover': {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                          transform: 'translateY(-1px) scale(1.05)',
-                          boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
-                          color: theme.palette.primary.main,
-                          '& svg': {
-                            transform: 'scale(1.1)',
-                          }
-                        },
-                        '&:active': {
-                          transform: 'translateY(0) scale(0.98)',
-                          boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
-                        },
-                        '& svg': {
-                          fontSize: '1.1rem',
-                          transition: theme.transitions.create(['transform', 'color'], {
-                            duration: 200
-                          })
-                        }
-                      }}
-                    >
-                      {item.icon}
-                    </IconButton>
-                  </Tooltip>
-                ))}
-              </Box>
+                    {item.icon}
+                  </IconButton>
+                </Tooltip>
+              ))}
             </React.Fragment>
           ))}
         </Box>
@@ -348,29 +322,9 @@ ${previewRef?.current?.innerHTML || ''}
         <Box sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1.5,
-          p: 0.5,
-          borderRadius: 2,
-          backgroundColor: alpha(theme.palette.background.paper, 0.6),
-          backdropFilter: 'blur(8px)',
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          transition: theme.transitions.create(['background-color', 'border-color']),
-          '&:hover': {
-            backgroundColor: alpha(theme.palette.background.paper, 0.8),
-            borderColor: alpha(theme.palette.divider, 0.2),
-          }
+          gap: 1,
         }}>
           <WordCounter text={content} />
-
-          <Divider
-            orientation="vertical"
-            flexItem
-            sx={{
-              height: 20,
-              borderColor: alpha(theme.palette.divider, 0.3),
-              mx: 0.5
-            }}
-          />
 
           {/* 导出按钮 */}
           <Tooltip
@@ -406,17 +360,23 @@ ${previewRef?.current?.innerHTML || ''}
                   easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
                 }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.success.main, 0.12),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
                   transform: 'translateY(-1px) scale(1.05)',
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.success.main, 0.25)}`,
-                  color: theme.palette.success.main,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
                 },
                 '&:active': {
                   transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
                 },
                 '& svg': {
                   fontSize: '1.1rem',
-                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
                 }
               }}
             >
@@ -458,17 +418,23 @@ ${previewRef?.current?.innerHTML || ''}
                   easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
                 }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
                   transform: 'translateY(-1px) scale(1.05)',
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.warning.main, 0.25)}`,
-                  color: theme.palette.warning.main,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
                 },
                 '&:active': {
                   transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
                 },
                 '& svg': {
                   fontSize: '1.1rem',
-                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
                 }
               }}
             >
@@ -510,17 +476,23 @@ ${previewRef?.current?.innerHTML || ''}
                   easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
                 }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.info.main, 0.12),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
                   transform: 'translateY(-1px) scale(1.05)',
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.info.main, 0.25)}`,
-                  color: theme.palette.info.main,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
                 },
                 '&:active': {
                   transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
                 },
                 '& svg': {
                   fontSize: '1.1rem',
-                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
                 }
               }}
             >
@@ -562,17 +534,23 @@ ${previewRef?.current?.innerHTML || ''}
                   easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
                 }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.secondary.main, 0.12),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
                   transform: 'translateY(-1px) scale(1.05)',
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.secondary.main, 0.25)}`,
-                  color: theme.palette.secondary.main,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
                 },
                 '&:active': {
                   transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
                 },
                 '& svg': {
                   fontSize: '1.1rem',
-                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
                 }
               }}
             >

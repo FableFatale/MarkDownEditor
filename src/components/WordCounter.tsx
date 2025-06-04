@@ -134,15 +134,6 @@ const WordCounter: React.FC<WordCounterProps> = ({ text }) => {
         </Typography>
       </Tooltip>
 
-      <Box
-        sx={{
-          width: '1px',
-          height: '1rem',
-          backgroundColor: alpha(theme.palette.divider, 0.4),
-          mx: { xs: 0.5, sm: 1 }
-        }}
-      />
-
       <Tooltip
         title="字符数（不含空格和标记）"
         arrow
@@ -173,15 +164,6 @@ const WordCounter: React.FC<WordCounterProps> = ({ text }) => {
           字符：{stats.characterCount}
         </Typography>
       </Tooltip>
-
-      <Box
-        sx={{
-          width: '1px',
-          height: '1rem',
-          backgroundColor: alpha(theme.palette.divider, 0.4),
-          mx: { xs: 0.5, sm: 1 }
-        }}
-      />
 
       <Tooltip
         title="基于中文300字/分钟，英文200词/分钟的阅读速度"
