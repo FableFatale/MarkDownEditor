@@ -1,0 +1,189 @@
+/* 单行工具栏样式 */
+@layer components {
+  .single-row-toolbar {
+    @apply flex items-center justify-between;
+    @apply bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm;
+    @apply border-b border-gray-200/50 dark:border-gray-700/50;
+    @apply px-4 py-2 shadow-sm;
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .single-row-toolbar:hover {
+    @apply shadow-md;
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  /* 工具栏按钮组 */
+  .toolbar-group {
+    @apply flex items-center space-x-0.5;
+  }
+
+  /* 工具栏按钮 */
+  .toolbar-btn {
+    @apply p-1.5 rounded-md;
+    @apply text-gray-600 dark:text-gray-300;
+    @apply hover:bg-gray-100/80 dark:hover:bg-gray-600/80;
+    @apply hover:text-primary-600 dark:hover:text-primary-400;
+    @apply transition-all duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/40;
+    @apply relative;
+  }
+
+  .toolbar-btn:hover {
+    @apply scale-105 shadow-sm;
+  }
+
+  .toolbar-btn:active {
+    @apply scale-95;
+  }
+
+  /* 工具栏分隔线 */
+  .toolbar-divider {
+    @apply w-px h-5 bg-gray-200/80 dark:bg-gray-600/80 mx-2;
+  }
+
+  /* 字数统计区域 */
+  .word-count-area {
+    @apply hidden md:flex items-center space-x-4;
+    @apply text-sm text-gray-500 dark:text-gray-400;
+    @apply font-mono;
+  }
+
+  .word-count-item {
+    @apply px-2 py-1 rounded;
+    @apply bg-gray-50/80 dark:bg-gray-700/80;
+    @apply border border-gray-200/50 dark:border-gray-600/50;
+  }
+
+  /* 功能按钮区域 */
+  .function-buttons {
+    @apply flex items-center space-x-1;
+  }
+
+  /* 导出菜单样式 */
+  .export-menu {
+    @apply absolute right-0 mt-2 w-48 origin-top-right;
+    @apply bg-white/95 dark:bg-gray-700/95 backdrop-blur-sm;
+    @apply rounded-lg shadow-lg;
+    @apply ring-1 ring-black/5 focus:outline-none z-50;
+    @apply divide-y divide-gray-100 dark:divide-gray-600;
+  }
+
+  .export-menu-item {
+    @apply flex w-full items-center px-4 py-2.5 text-sm;
+    @apply text-gray-700 dark:text-gray-200;
+    @apply transition-colors duration-150;
+    @apply hover:bg-gray-50 dark:hover:bg-gray-600;
+  }
+
+  .export-menu-item:first-child {
+    @apply rounded-t-lg;
+  }
+
+  .export-menu-item:last-child {
+    @apply rounded-b-lg;
+  }
+
+  .export-menu-item svg {
+    @apply mr-2 h-4 w-4 text-gray-500 dark:text-gray-400;
+  }
+
+  /* 编辑器容器 */
+  .editor-container {
+    @apply flex-1 flex overflow-hidden;
+  }
+
+  /* 编辑器面板 */
+  .editor-panel {
+    @apply border-r border-gray-200 dark:border-gray-700 overflow-hidden;
+  }
+
+  /* 预览面板 */
+  .preview-panel {
+    @apply flex-1 overflow-auto p-6;
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  /* 分隔条 */
+  .resize-handle {
+    @apply w-1 cursor-col-resize;
+    @apply bg-gray-200 dark:bg-gray-700;
+    @apply hover:bg-primary-500 dark:hover:bg-primary-500;
+    @apply transition-colors duration-200;
+  }
+
+  .resize-handle:hover {
+    @apply shadow-sm;
+  }
+
+  /* 全屏模式 */
+  .fullscreen-mode {
+    @apply fixed inset-0 z-50;
+    @apply bg-white dark:bg-gray-900;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .single-row-toolbar {
+      @apply px-2 py-1.5;
+    }
+
+    .toolbar-btn {
+      @apply p-1;
+    }
+
+    .toolbar-group {
+      @apply space-x-0;
+    }
+
+    .toolbar-divider {
+      @apply mx-1;
+    }
+
+    .word-count-area {
+      @apply hidden;
+    }
+  }
+
+  /* 动画效果 */
+  .toolbar-slide-in {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* 工具提示样式 */
+  .tooltip {
+    @apply absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2;
+    @apply px-2 py-1 text-xs text-white bg-gray-900 rounded;
+    @apply opacity-0 pointer-events-none transition-opacity duration-200;
+    @apply whitespace-nowrap z-50;
+  }
+
+  .toolbar-btn:hover .tooltip {
+    @apply opacity-100;
+  }
+
+  /* 活跃状态 */
+  .toolbar-btn.active {
+    @apply bg-primary-50/90 dark:bg-gray-800/80;
+    @apply text-primary-600 dark:text-primary-300;
+    @apply ring-2 ring-primary-500/40 dark:ring-primary-400/40;
+  }
+
+  /* 禁用状态 */
+  .toolbar-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    @apply hover:scale-100 hover:shadow-none;
+    @apply hover:bg-transparent dark:hover:bg-transparent;
+  }
+}

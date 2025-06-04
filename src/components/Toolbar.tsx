@@ -232,15 +232,26 @@ ${previewRef?.current?.innerHTML || ''}
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          py: { xs: 0.5, sm: 0.75 },
-          px: { xs: 1, sm: 1.5, md: 2 },
-          minHeight: 48,
+          py: { xs: 0.75, sm: 1 },
+          px: { xs: 1.5, sm: 2, md: 3 },
+          minHeight: 56,
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '60%',
+            height: '1px',
+            background: `linear-gradient(90deg, transparent, ${alpha(theme.palette.primary.main, 0.3)}, transparent)`,
+            opacity: 0.6,
+          }
         }}
       >
-        <Box sx={{ flexGrow: 1 }} />
 
         {/* 左侧格式化工具栏 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
           {formatToolbarGroups.map((group, groupIndex) => (
             <React.Fragment key={groupIndex}>
               {groupIndex > 0 && (
@@ -248,26 +259,80 @@ ${previewRef?.current?.innerHTML || ''}
                   orientation="vertical"
                   flexItem
                   sx={{
-                    mx: 0.5,
-                    height: 20,
-                    borderColor: alpha(theme.palette.divider, 0.5)
+                    mx: 1,
+                    height: 24,
+                    borderColor: alpha(theme.palette.divider, 0.3),
+                    borderWidth: 1,
+                    borderRadius: 0.5,
+                    background: `linear-gradient(to bottom, transparent, ${alpha(theme.palette.divider, 0.4)}, transparent)`,
                   }}
                 />
               )}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                p: 0.5,
+                borderRadius: 1.5,
+                transition: theme.transitions.create(['background-color']),
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                }
+              }}>
                 {group.items.map((item, itemIndex) => (
-                  <Tooltip key={itemIndex} title={item.tooltip}>
+                  <Tooltip
+                    key={itemIndex}
+                    title={item.tooltip}
+                    placement="bottom"
+                    arrow
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          bgcolor: alpha(theme.palette.grey[900], 0.9),
+                          color: 'white',
+                          fontSize: '0.75rem',
+                          borderRadius: 1,
+                          backdropFilter: 'blur(10px)',
+                        }
+                      }
+                    }}
+                  >
                     <IconButton
                       size="small"
                       onClick={() => onFormatText?.(item.format)}
                       sx={{
-                        width: 28,
-                        height: 28,
-                        transition: theme.transitions.create(['background-color', 'transform']),
+                        width: 32,
+                        height: 32,
+                        borderRadius: 1.5,
+                        position: 'relative',
+                        transition: theme.transitions.create([
+                          'background-color',
+                          'transform',
+                          'box-shadow',
+                          'color'
+                        ], {
+                          duration: 200,
+                          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                        }),
                         '&:hover': {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                          transform: 'scale(1.05)',
+                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                          transform: 'translateY(-1px) scale(1.05)',
+                          boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                          color: theme.palette.primary.main,
+                          '& svg': {
+                            transform: 'scale(1.1)',
+                          }
                         },
+                        '&:active': {
+                          transform: 'translateY(0) scale(0.98)',
+                          boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
+                        },
+                        '& svg': {
+                          fontSize: '1.1rem',
+                          transition: theme.transitions.create(['transform', 'color'], {
+                            duration: 200
+                          })
+                        }
                       }}
                     >
                       {item.icon}
@@ -280,20 +345,79 @@ ${previewRef?.current?.innerHTML || ''}
         </Box>
 
         {/* 右侧工具栏按钮组 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          p: 0.5,
+          borderRadius: 2,
+          backgroundColor: alpha(theme.palette.background.paper, 0.6),
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          transition: theme.transitions.create(['background-color', 'border-color']),
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.background.paper, 0.8),
+            borderColor: alpha(theme.palette.divider, 0.2),
+          }
+        }}>
           <WordCounter text={content} />
 
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{
+              height: 20,
+              borderColor: alpha(theme.palette.divider, 0.3),
+              mx: 0.5
+            }}
+          />
+
           {/* 导出按钮 */}
-          <Tooltip title="导出文档">
+          <Tooltip
+            title="导出文档"
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
             <IconButton
               size="small"
               onClick={handleExportClick}
               sx={{
-                transition: theme.transitions.create(['background-color', 'transform']),
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  transform: 'scale(1.05)',
+                  backgroundColor: alpha(theme.palette.success.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.success.main, 0.25)}`,
+                  color: theme.palette.success.main,
                 },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                }
               }}
             >
               <GetApp />
@@ -301,16 +425,51 @@ ${previewRef?.current?.innerHTML || ''}
           </Tooltip>
 
           {/* 主题切换按钮 */}
-          <Tooltip title={themeMode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}>
+          <Tooltip
+            title={themeMode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
             <IconButton
               size="small"
               onClick={onToggleTheme}
               sx={{
-                transition: theme.transitions.create(['background-color', 'transform']),
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  transform: 'scale(1.05)',
+                  backgroundColor: alpha(theme.palette.warning.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.warning.main, 0.25)}`,
+                  color: theme.palette.warning.main,
                 },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                }
               }}
             >
               {themeMode === 'dark' ? <LightMode /> : <DarkMode />}
@@ -318,16 +477,51 @@ ${previewRef?.current?.innerHTML || ''}
           </Tooltip>
 
           {/* 全屏切换按钮 */}
-          <Tooltip title={isFullScreen ? '退出全屏' : '进入全屏'}>
+          <Tooltip
+            title={isFullScreen ? '退出全屏' : '进入全屏'}
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
             <IconButton
               size="small"
               onClick={onToggleFullScreen}
               sx={{
-                transition: theme.transitions.create(['background-color', 'transform']),
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  transform: 'scale(1.05)',
+                  backgroundColor: alpha(theme.palette.info.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.info.main, 0.25)}`,
+                  color: theme.palette.info.main,
                 },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                }
               }}
             >
               {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
@@ -335,16 +529,51 @@ ${previewRef?.current?.innerHTML || ''}
           </Tooltip>
 
           {/* 设置按钮 */}
-          <Tooltip title="设置">
+          <Tooltip
+            title="设置"
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
             <IconButton
               size="small"
               onClick={handleSettingsClick}
               sx={{
-                transition: theme.transitions.create(['background-color', 'transform']),
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  transform: 'scale(1.05)',
+                  backgroundColor: alpha(theme.palette.secondary.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.secondary.main, 0.25)}`,
+                  color: theme.palette.secondary.main,
                 },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform'], { duration: 200 })
+                }
               }}
             >
               <Settings />

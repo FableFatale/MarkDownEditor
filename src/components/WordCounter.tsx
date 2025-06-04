@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Tooltip } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 
 interface WordCounterProps {
   text: string;
@@ -78,28 +78,57 @@ const WordCounter: React.FC<WordCounterProps> = ({ text }) => {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: { xs: 1, sm: 2 },
+        gap: { xs: 1, sm: 1.5 },
         padding: { xs: '6px 12px', sm: '8px 16px' },
-        borderRadius: theme.shape.borderRadius,
-        backgroundColor: theme.palette.mode === 'dark' 
-          ? 'rgba(255, 255, 255, 0.05)'
-          : 'rgba(0, 0, 0, 0.03)',
+        borderRadius: 1.5,
+        backgroundColor: alpha(theme.palette.background.default, 0.4),
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
-        boxShadow: 'none',
-        transition: 'all 0.2s ease-in-out',
+        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.05)}`,
+        transition: theme.transitions.create([
+          'background-color',
+          'border-color',
+          'box-shadow',
+          'transform'
+        ], {
+          duration: 200,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        }),
         '&:hover': {
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.08)'
-            : 'rgba(0, 0, 0, 0.05)',
+          backgroundColor: alpha(theme.palette.background.default, 0.6),
+          borderColor: alpha(theme.palette.divider, 0.2),
+          boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.1)}`,
+          transform: 'translateY(-1px)',
         },
       }}
     >
-      <Tooltip title="总字数（中英文）" arrow placement="top">
+      <Tooltip
+        title="总字数（中英文）"
+        arrow
+        placement="top"
+        componentsProps={{
+          tooltip: {
+            sx: {
+              bgcolor: alpha(theme.palette.grey[900], 0.9),
+              color: 'white',
+              fontSize: '0.75rem',
+              borderRadius: 1,
+              backdropFilter: 'blur(10px)',
+            }
+          }
+        }}
+      >
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            fontWeight: 500,
+            fontSize: '0.8rem'
+          }}
         >
           字数：{stats.wordCount}
         </Typography>
@@ -109,16 +138,37 @@ const WordCounter: React.FC<WordCounterProps> = ({ text }) => {
         sx={{
           width: '1px',
           height: '1rem',
-          backgroundColor: theme.palette.divider,
+          backgroundColor: alpha(theme.palette.divider, 0.4),
           mx: { xs: 0.5, sm: 1 }
         }}
       />
 
-      <Tooltip title="字符数（不含空格和标记）" arrow placement="top">
+      <Tooltip
+        title="字符数（不含空格和标记）"
+        arrow
+        placement="top"
+        componentsProps={{
+          tooltip: {
+            sx: {
+              bgcolor: alpha(theme.palette.grey[900], 0.9),
+              color: 'white',
+              fontSize: '0.75rem',
+              borderRadius: 1,
+              backdropFilter: 'blur(10px)',
+            }
+          }
+        }}
+      >
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            fontWeight: 500,
+            fontSize: '0.8rem'
+          }}
         >
           字符：{stats.characterCount}
         </Typography>
@@ -128,16 +178,37 @@ const WordCounter: React.FC<WordCounterProps> = ({ text }) => {
         sx={{
           width: '1px',
           height: '1rem',
-          backgroundColor: theme.palette.divider,
+          backgroundColor: alpha(theme.palette.divider, 0.4),
           mx: { xs: 0.5, sm: 1 }
         }}
       />
 
-      <Tooltip title="基于中文300字/分钟，英文200词/分钟的阅读速度" arrow placement="top">
+      <Tooltip
+        title="基于中文300字/分钟，英文200词/分钟的阅读速度"
+        arrow
+        placement="top"
+        componentsProps={{
+          tooltip: {
+            sx: {
+              bgcolor: alpha(theme.palette.grey[900], 0.9),
+              color: 'white',
+              fontSize: '0.75rem',
+              borderRadius: 1,
+              backdropFilter: 'blur(10px)',
+            }
+          }
+        }}
+      >
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            fontWeight: 500,
+            fontSize: '0.8rem'
+          }}
         >
           预计阅读：{stats.readingTime}
         </Typography>

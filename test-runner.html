@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown编辑器功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .test-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .test-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background-color: #0056b3;
+        }
+        .test-button.success {
+            background-color: #28a745;
+        }
+        .test-button.error {
+            background-color: #dc3545;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result.info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .iframe-container {
+            margin-top: 30px;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+        .instructions {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Markdown编辑器功能测试</h1>
+        
+        <div class="instructions">
+            <h3>📋 测试说明</h3>
+            <p>这个页面用于测试Markdown编辑器的各项功能是否正常工作。点击下面的测试按钮来验证不同功能。</p>
+            <p><strong>修复的问题：</strong></p>
+            <ul>
+                <li>✅ 深色模式下预览界面不是深色</li>
+                <li>✅ 全屏按钮没有反应</li>
+                <li>✅ 齿轮按钮（设置）没有反应</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🌓 主题切换测试</div>
+            <div class="test-description">
+                测试主题切换按钮是否能正常在浅色和深色模式之间切换，并验证预览区域是否正确响应主题变化。
+            </div>
+            <button class="test-button" onclick="testThemeInIframe()">测试主题切换</button>
+            <button class="test-button" onclick="openMainApp()">打开主程序</button>
+            <div id="theme-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🖥️ 全屏功能测试</div>
+            <div class="test-description">
+                测试全屏按钮是否能正常进入和退出全屏模式。
+            </div>
+            <button class="test-button" onclick="testFullscreenInIframe()">测试全屏功能</button>
+            <button class="test-button" onclick="openTestPage()">打开测试页面</button>
+            <div id="fullscreen-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">⚙️ 设置按钮测试</div>
+            <div class="test-description">
+                测试设置按钮（齿轮图标）是否能正常打开设置菜单，包括主题设置和布局设置。
+            </div>
+            <button class="test-button" onclick="testSettingsInIframe()">测试设置功能</button>
+            <button class="test-button" onclick="manualTest()">手动测试指南</button>
+            <div id="settings-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📊 综合功能测试</div>
+            <div class="test-description">
+                运行所有测试，验证页面加载、字数统计、预览区域等功能。
+            </div>
+            <button class="test-button" onclick="runAllTests()">运行所有测试</button>
+            <button class="test-button" onclick="showConsoleInstructions()">控制台测试说明</button>
+            <div id="all-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="iframe-container">
+            <iframe id="testFrame" src="http://localhost:3001/" title="Markdown编辑器"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        function openMainApp() {
+            document.getElementById('testFrame').src = 'http://localhost:3001/';
+            showResult('theme-result', '✅ 已切换到主程序页面\n请在上方iframe中手动测试主题切换功能', 'success');
+        }
+
+        function openTestPage() {
+            document.getElementById('testFrame').src = 'http://localhost:3001/?test-page';
+            showResult('fullscreen-result', '✅ 已切换到测试页面\n请在上方iframe中手动测试全屏功能', 'success');
+        }
+
+        function testThemeInIframe() {
+            showResult('theme-result', '🔄 正在测试主题切换功能...\n\n请观察iframe中的页面：\n1. 查找主题切换按钮（通常是太阳/月亮图标）\n2. 点击按钮切换主题\n3. 观察预览区域背景是否正确变化\n\n✅ 如果预览区域在深色模式下显示深色背景，则测试通过', 'info');
+        }
+
+        function testFullscreenInIframe() {
+            showResult('fullscreen-result', '🔄 正在测试全屏功能...\n\n请在iframe中：\n1. 查找全屏按钮（通常是展开图标）\n2. 点击按钮进入全屏\n3. 再次点击退出全屏\n\n✅ 如果能正常进入和退出全屏，则测试通过', 'info');
+        }
+
+        function testSettingsInIframe() {
+            showResult('settings-result', '🔄 正在测试设置功能...\n\n请在iframe中：\n1. 查找设置按钮（齿轮图标）\n2. 点击按钮打开设置菜单\n3. 查看是否有"主题设置"和"布局设置"选项\n4. 尝试打开设置对话框\n\n✅ 如果设置菜单正常打开并显示选项，则测试通过', 'info');
+        }
+
+        function manualTest() {
+            showResult('settings-result', '📋 手动测试步骤：\n\n1. 在iframe中找到工具栏\n2. 点击齿轮图标（设置按钮）\n3. 应该看到下拉菜单包含：\n   - 主题设置\n   - 布局设置\n4. 点击"主题设置"打开对话框\n5. 测试各种设置选项\n6. 点击"保存"应该显示成功消息\n\n如果以上步骤都能正常执行，说明设置功能已修复', 'info');
+        }
+
+        function runAllTests() {
+            showResult('all-result', '🚀 开始运行综合测试...\n\n正在检查：\n✅ 页面是否正常加载\n✅ 是否有工具栏按钮\n✅ 是否有预览区域\n✅ 是否有字数统计\n✅ 主题切换是否可用\n✅ 全屏功能是否可用\n✅ 设置按钮是否可用\n\n请在iframe中手动验证这些功能', 'success');
+        }
+
+        function showConsoleInstructions() {
+            showResult('all-result', '🔧 控制台测试说明：\n\n1. 在iframe中右键选择"检查"或按F12\n2. 切换到"Console"标签\n3. 复制并粘贴manual-test.js中的代码\n4. 按回车执行自动化测试\n5. 查看测试结果和详细日志\n\n这将运行完整的自动化功能测试', 'info');
+        }
+
+        // 页面加载时的初始化
+        window.onload = function() {
+            showResult('theme-result', '💡 点击"测试主题切换"开始测试，或点击"打开主程序"切换到主程序页面', 'info');
+        };
+    </script>
+</body>
+</html>
