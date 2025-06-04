@@ -5,6 +5,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicLight, basicDark } from '@uiw/codemirror-theme-basic';
 import { useEditorFormat } from '../hooks/useEditorFormat';
+import { editorKeymap } from './editor/EditorKeyBindings';
 
 interface LargeFileEditorProps {
   content: string;
@@ -114,7 +115,7 @@ export const LargeFileEditor: React.FC<LargeFileEditorProps> = ({
       <CodeMirror
         value={visibleContent}
         height="100%"
-        extensions={[markdown()]}
+        extensions={[markdown(), editorKeymap]}
         theme={theme === 'dark' ? basicDark : basicLight}
         onChange={handleChange}
         onCreateEditor={(view) => {
