@@ -33,11 +33,14 @@ import {
   FormatListNumbered,
   GetApp,
   CloudUpload,
-  PhotoCamera
+  PhotoCamera,
+  History
 } from '@mui/icons-material';
 import WordCounter from './WordCounter';
 import PdfExporter from './PdfExporter';
 import { ImageUploadDialog } from './ImageUploadDialog';
+import SaveStatusIndicator from './SaveStatusIndicator';
+import { SaveState } from '../hooks/useAutoSave';
 
 interface ToolbarProps {
   content: string;
@@ -49,6 +52,9 @@ interface ToolbarProps {
   onLayoutSettings?: () => void;
   previewRef?: React.RefObject<HTMLDivElement>;
   onFormatText?: (format: string) => void;
+  saveState?: SaveState;
+  onManualSave?: () => void;
+  onVersionHistory?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -60,7 +66,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onThemeSettings,
   onLayoutSettings,
   previewRef,
-  onFormatText
+  onFormatText,
+  saveState,
+  onManualSave,
+  onVersionHistory
 }) => {
   const theme = useTheme();
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
@@ -362,7 +371,75 @@ ${previewRef?.current?.innerHTML || ''}
           alignItems: 'center',
           gap: 1,
         }}>
+          {/* 保存状态指示器 */}
+          {saveState && (
+            <SaveStatusIndicator
+              saveState={saveState}
+              onManualSave={onManualSave}
+            />
+          )}
+
           <WordCounter text={content} />
+
+          {/* 版本历史按钮 */}
+          {onVersionHistory && (
+            <Tooltip
+              title="版本历史"
+              placement="bottom"
+              arrow
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: alpha(theme.palette.grey[900], 0.9),
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    borderRadius: 1,
+                    backdropFilter: 'blur(10px)',
+                  }
+                }
+              }}
+            >
+              <IconButton
+                size="small"
+                onClick={onVersionHistory}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  transition: theme.transitions.create([
+                    'background-color',
+                    'transform',
+                    'box-shadow',
+                    'color'
+                  ], {
+                    duration: 200,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                  }),
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                    transform: 'translateY(-1px) scale(1.05)',
+                    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                    color: theme.palette.primary.main,
+                    '& svg': {
+                      transform: 'scale(1.1)',
+                    }
+                  },
+                  '&:active': {
+                    transform: 'translateY(0) scale(0.98)',
+                    boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
+                  },
+                  '& svg': {
+                    fontSize: '1.1rem',
+                    transition: theme.transitions.create(['transform', 'color'], {
+                      duration: 200
+                    })
+                  }
+                }}
+              >
+                <History />
+              </IconButton>
+            </Tooltip>
+          )}
 
           {/* 导出按钮 */}
           <Tooltip

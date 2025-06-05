@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -8,6 +8,7 @@ import '../../katex-styles.css';
 import { createCustomHeadingRenderer, HeadingStyleType } from '../CustomHeadingStyles';
 import { Box, FormControl, InputLabel, Select, MenuItem, useTheme, Typography, Divider, Tooltip } from '@mui/material';
 import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
+import { MermaidDiagram, isMermaidCode } from '../MermaidDiagram';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -39,12 +40,108 @@ export const MarkdownPreview = ({
         {...props}
       />
     ),
-    code: ({ node, inline, ...props }: any) =>
-      inline ? (
-        <code className="bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5" {...props} />
-      ) : (
-        <code className="block bg-gray-100 dark:bg-gray-800 rounded p-4 my-4 overflow-auto" {...props} />
-      ),
+    pre: ({ node, children, ...props }: any) => {
+      console.log('🔍 Pre block detected, children:', children);
+
+      // 检查是否包含代码块
+      const codeElement = React.Children.toArray(children).find(
+        (child: any) => child?.props?.className?.includes('language-')
+      );
+
+      if (codeElement && typeof codeElement === 'object' && 'props' in codeElement) {
+        const className = codeElement.props.className || '';
+        const match = /language-(\w+)/.exec(className);
+        const language = match ? match[1] : '';
+
+        // 获取原始代码内容，确保正确处理换行符
+        let codeContent = '';
+        if (React.isValidElement(codeElement) && codeElement.props.children) {
+          if (typeof codeElement.props.children === 'string') {
+            codeContent = codeElement.props.children;
+          } else if (Array.isArray(codeElement.props.children)) {
+            codeContent = codeElement.props.children.join('');
+          } else {
+            codeContent = String(codeElement.props.children);
+          }
+        }
+
+        // 清理代码内容
+        codeContent = codeContent.trim();
+
+        console.log('📝 Pre block detected:', {
+          language,
+          className,
+          codeLength: codeContent.length,
+          codePreview: codeContent.substring(0, 100) + '...',
+          isMermaid: isMermaidCode(language)
+        });
+
+        // 检查是否为Mermaid图表
+        console.log('🔍 Checking code block - Language:', language, 'Content length:', codeContent?.length);
+        console.log('🔍 Raw language from className:', className);
+        console.log('🔍 isMermaidCode result:', isMermaidCode(language));
+
+        if (isMermaidCode(language)) {
+          console.log('🎯 Rendering Mermaid diagram from pre block!');
+          console.log('📊 Full chart content:', codeContent);
+
+          // 验证内容不为空
+          if (codeContent) {
+            // 使用安全的hash生成方法来确保组件稳定性
+            const chartKey = `mermaid-${codeContent.length}-${codeContent.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
+            console.log('🔑 Using chart key:', chartKey);
+            console.log('🚀 About to render MermaidDiagram component');
+            return <MermaidDiagram key={chartKey} chart={codeContent} />;
+          } else {
+            console.error('❌ Empty Mermaid content detected');
+          }
+        } else {
+          console.log('❌ Not a Mermaid code block, language:', language);
+        }
+      }
+
+      // 普通代码块
+      return (
+        <pre
+          className="bg-gray-100 dark:bg-gray-800 rounded p-4 my-4 overflow-auto"
+          {...props}
+        >
+          {children}
+        </pre>
+      );
+    },
+    code: ({ node, inline, className, children, ...props }: any) => {
+      console.log('🔍 Code block detected:', { inline, className, children: typeof children === 'string' ? children.substring(0, 50) + '...' : children });
+
+      // 只处理内联代码，代码块由pre处理
+      if (inline) {
+        return <code className="bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5" {...props}>{children}</code>;
+      }
+
+      // 检查是否为Mermaid代码块
+      if (className && className.includes('language-mermaid')) {
+        console.log('🚫 Mermaid code block detected in code component - should be handled by pre component');
+        // 不处理Mermaid代码块，让pre组件处理
+        return null;
+      }
+
+      // 非内联代码直接返回，让pre处理
+      return <code className={className} {...props}>{children}</code>;
+    },
+    div: ({ node, className, ...props }: any) => {
+      // 处理Mermaid容器
+      if (className === 'mermaid-container') {
+        const mermaidData = props['data-mermaid'];
+        if (mermaidData) {
+          const chart = decodeURIComponent(mermaidData);
+          console.log('Rendering Mermaid from div container:', chart);
+          return <MermaidDiagram chart={chart} />;
+        }
+      }
+
+      return <div className={className} {...props} />;
+    },
+
     blockquote: ({ node, ...props }: any) => (
       <blockquote
         className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-4 italic"

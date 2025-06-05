@@ -194,7 +194,7 @@ class ImageService {
       const filteredImages = images.filter(img => img.id !== id);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filteredImages));
       return true;
-    } catch {
+    } catch (error) {
       return false;
     }
   }
@@ -204,7 +204,7 @@ class ImageService {
     try {
       localStorage.removeItem(this.STORAGE_KEY);
       return true;
-    } catch {
+    } catch (error) {
       return false;
     }
   }

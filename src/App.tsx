@@ -22,6 +22,9 @@ import {
 import { alpha } from '@mui/material/styles';
 import Toolbar from './components/Toolbar';
 import { MarkdownEditorContainer } from './components/editor/MarkdownEditorContainer';
+import { useAutoSave } from './hooks/useAutoSave';
+import SaveStatusIndicator from './components/SaveStatusIndicator';
+import VersionHistory from './components/VersionHistory';
 
 const App: React.FC = () => {
   // 基本状态
@@ -36,6 +39,7 @@ const App: React.FC = () => {
 - **全屏模式**：专注写作体验
 - **字数统计**：实时显示字数、字符数
 - **设置系统**：完整的主题和布局设置
+- **Mermaid图表**：支持流程图、时序图等
 
 ## 快捷键
 
@@ -51,6 +55,17 @@ function hello() {
 }
 \`\`\`
 
+## Mermaid流程图测试
+
+请查看右侧预览区域，应该能看到一个简单的流程图：
+
+\`\`\`mermaid
+graph LR
+    A[开始] --> B[结束]
+\`\`\`
+
+如果没有看到图表，请检查浏览器控制台的调试信息。
+
 开始使用这个强大的 Markdown 编辑器吧！`);
 
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
@@ -59,6 +74,7 @@ function hello() {
   // 设置对话框状态
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
   const [layoutDialogOpen, setLayoutDialogOpen] = useState(false);
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
@@ -74,6 +90,34 @@ function hello() {
 
   // 预览区域引用，用于PDF导出
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // 自动保存功能
+  const {
+    saveState,
+    versions,
+    manualSave,
+    restoreContent,
+    saveVersion,
+    restoreVersion,
+    deleteVersion,
+    clearAll
+  } = useAutoSave(value, {
+    key: 'markdown-editor-content',
+    debounceMs: 2000,
+    maxVersions: 10,
+    onSave: (content) => {
+      console.log('Content auto-saved:', content.length, 'characters');
+    },
+    onRestore: (content) => {
+      setValue(content);
+      setSnackbarMessage('内容已恢复');
+      setSnackbarOpen(true);
+    },
+    onError: (error) => {
+      setSnackbarMessage(`保存失败: ${error}`);
+      setSnackbarOpen(true);
+    }
+  });
 
   // 主题切换
   const toggleTheme = () => {
@@ -106,6 +150,21 @@ function hello() {
     };
   }, []);
 
+  // 监听Ctrl+S快捷键进行手动保存
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        manualSave();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [manualSave]);
+
   // 初始化主题
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme-mode') as 'light' | 'dark' | null;
@@ -124,6 +183,47 @@ function hello() {
 
   const handleLayoutSettings = () => {
     setLayoutDialogOpen(true);
+  };
+
+  const handleVersionHistory = () => {
+    setVersionHistoryOpen(true);
+  };
+
+  const handleVersionHistoryClose = () => {
+    setVersionHistoryOpen(false);
+  };
+
+  const handleRestoreVersion = async (versionId: string) => {
+    try {
+      await restoreVersion(versionId);
+      setSnackbarMessage('版本已恢复');
+      setSnackbarOpen(true);
+    } catch (error) {
+      setSnackbarMessage('版本恢复失败');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    try {
+      await deleteVersion(versionId);
+      setSnackbarMessage('版本已删除');
+      setSnackbarOpen(true);
+    } catch (error) {
+      setSnackbarMessage('版本删除失败');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleSaveVersion = async (title?: string) => {
+    try {
+      await saveVersion(title);
+      setSnackbarMessage('版本已保存');
+      setSnackbarOpen(true);
+    } catch (error) {
+      setSnackbarMessage('版本保存失败');
+      setSnackbarOpen(true);
+    }
   };
 
   const handleThemeDialogClose = () => {
@@ -302,6 +402,9 @@ function hello() {
             onLayoutSettings={handleLayoutSettings}
             previewRef={previewRef}
             onFormatText={handleFormatText}
+            saveState={saveState}
+            onManualSave={manualSave}
+            onVersionHistory={handleVersionHistory}
           />
 
           {/* 使用新的MarkdownEditorContainer组件 */}
@@ -415,6 +518,17 @@ function hello() {
             <Button onClick={handleSaveLayoutSettings} variant="contained">保存</Button>
           </DialogActions>
         </Dialog>
+
+        {/* 版本历史对话框 */}
+        <VersionHistory
+          open={versionHistoryOpen}
+          onClose={handleVersionHistoryClose}
+          versions={versions}
+          onRestoreVersion={handleRestoreVersion}
+          onDeleteVersion={handleDeleteVersion}
+          onSaveVersion={handleSaveVersion}
+          currentContent={value}
+        />
 
         {/* 消息提示 */}
         <Snackbar
