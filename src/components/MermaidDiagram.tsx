@@ -194,7 +194,12 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
       </Box>
 
       {/* React Flow 图表 */}
-      <Box sx={{ height: 'calc(100% - 48px)' }}>
+      <Box sx={{
+        height: 'calc(100% - 48px)',
+        minHeight: '400px',
+        width: '100%',
+        position: 'relative'
+      }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -202,6 +207,12 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           fitView
+          fitViewOptions={{
+            padding: 0.2,
+            includeHiddenNodes: false,
+            minZoom: 0.1,
+            maxZoom: 2
+          }}
           attributionPosition="bottom-left"
           defaultEdgeOptions={{
             animated: false,
@@ -211,6 +222,8 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           nodesConnectable={false}
           elementsSelectable={false}
           selectNodesOnDrag={false}
+          style={{ width: '100%', height: '100%' }}
+          className="react-flow-mermaid"
         >
           <Controls />
           {showMiniMap && (
