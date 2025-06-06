@@ -59,9 +59,41 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
       console.log('🎯 ReactFlow接收到的节点数据:', flowData.nodes);
       console.log('🎯 ReactFlow接收到的边数据:', flowData.edges);
 
+      // 验证节点数据完整性
+      const validNodes = flowData.nodes.filter(node => {
+        const isValid = node && node.id && node.data && node.data.label && node.position;
+        if (!isValid) {
+          console.error('❌ 无效节点:', node);
+        }
+        return isValid;
+      });
+      const validEdges = flowData.edges.filter(edge => {
+        const isValid = edge && edge.id && edge.source && edge.target;
+        if (!isValid) {
+          console.error('❌ 无效边:', edge);
+        }
+        return isValid;
+      });
+
+      console.log('✅ 有效节点数量:', validNodes.length, '/', flowData.nodes.length);
+      console.log('✅ 有效边数量:', validEdges.length, '/', flowData.edges.length);
+      console.log('📋 有效节点详情:', validNodes);
+      console.log('📋 有效边详情:', validEdges);
+
       // 手动设置节点和边
-      setNodes(flowData.nodes);
-      setEdges(flowData.edges);
+      if (validNodes.length === 0 && flowData.nodes.length > 0) {
+        console.warn('⚠️ 所有节点都被过滤了，强制使用原始数据');
+        setNodes(flowData.nodes);
+      } else {
+        setNodes(validNodes);
+      }
+
+      if (validEdges.length === 0 && flowData.edges.length > 0) {
+        console.warn('⚠️ 所有边都被过滤了，强制使用原始数据');
+        setEdges(flowData.edges);
+      } else {
+        setEdges(validEdges);
+      }
 
       console.log('🔄 手动更新ReactFlow状态');
     }
@@ -226,6 +258,33 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           className="react-flow-mermaid"
         >
           <Controls />
+
+          {/* 临时调试信息显示 */}
+          {nodes.length === 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'rgba(255, 255, 255, 0.9)',
+              padding: '20px',
+              borderRadius: '8px',
+              border: '2px solid #ff6b6b',
+              zIndex: 1000,
+              textAlign: 'center'
+            }}>
+              <div style={{ color: '#ff6b6b', fontWeight: 'bold', marginBottom: '10px' }}>
+                ⚠️ ReactFlow 渲染问题
+              </div>
+              <div style={{ fontSize: '14px', color: '#666' }}>
+                解析节点数: {flowData?.nodes?.length || 0}<br/>
+                当前节点数: {nodes.length}<br/>
+                解析边数: {flowData?.edges?.length || 0}<br/>
+                当前边数: {edges.length}
+              </div>
+            </div>
+          )}
+
           {showMiniMap && (
             <MiniMap
               style={{
