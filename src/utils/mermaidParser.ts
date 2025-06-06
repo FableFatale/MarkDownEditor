@@ -31,8 +31,15 @@ const getNodeStyle = (shape: string) => {
       return {
         backgroundColor: '#e1f5fe',
         border: '2px solid #0277bd',
-        borderRadius: '4px',
-        padding: '10px'
+        borderRadius: '6px',
+        padding: '12px 16px',
+        minWidth: '80px',
+        minHeight: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '14px',
+        fontWeight: '500'
       };
     case 'round':
     case 'circle':
@@ -40,22 +47,41 @@ const getNodeStyle = (shape: string) => {
         backgroundColor: '#f3e5f5',
         border: '2px solid #7b1fa2',
         borderRadius: '50%',
-        padding: '10px'
+        padding: '12px 16px',
+        minWidth: '80px',
+        minHeight: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '14px',
+        fontWeight: '500'
       };
     case 'diamond':
       return {
         backgroundColor: '#fff3e0',
         border: '2px solid #ef6c00',
-        borderRadius: '4px',
-        padding: '10px',
-        transform: 'rotate(45deg)'
+        borderRadius: '8px',
+        padding: '12px 16px',
+        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: '80px',
+        minHeight: '40px'
       };
     default:
       return {
         backgroundColor: '#f5f5f5',
         border: '2px solid #666',
-        borderRadius: '4px',
-        padding: '10px'
+        borderRadius: '6px',
+        padding: '12px 16px',
+        minWidth: '80px',
+        minHeight: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '14px',
+        fontWeight: '500'
       };
   }
 };
@@ -91,18 +117,18 @@ const getEdgeStyle = (type: string, originalLine: string) => {
 const parseNode = (nodeStr: string): { id: string; label: string; shape: string } => {
   console.log('🔍 解析节点:', nodeStr);
   
-  // 匹配各种节点格式
+  // 匹配各种节点格式 - 支持中文字符
   const patterns = [
-    // A[文本] - 方形节点
-    /^([A-Za-z0-9_]+)\[([^\]]+)\]$/,
-    // A(文本) - 圆形节点
-    /^([A-Za-z0-9_]+)\(([^)]+)\)$/,
-    // A{文本} - 菱形节点
-    /^([A-Za-z0-9_]+)\{([^}]+)\}$/,
-    // A((文本)) - 圆形节点
-    /^([A-Za-z0-9_]+)\(\(([^)]+)\)\)$/,
-    // 简单节点 A
-    /^([A-Za-z0-9_]+)$/
+    // A[文本] - 方形节点（支持中文）
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\[([^\]]+)\]$/,
+    // A(文本) - 圆形节点（支持中文）
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\(([^)]+)\)$/,
+    // A{文本} - 菱形节点（支持中文）
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\{([^}]+)\}$/,
+    // A((文本)) - 圆形节点（支持中文）
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\(\(([^)]+)\)\)$/,
+    // 简单节点 A（支持中文）
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)$/
   ];
 
   for (const pattern of patterns) {
@@ -131,36 +157,36 @@ const parseNode = (nodeStr: string): { id: string; label: string; shape: string 
 const parseEdge = (edgeStr: string): { source: string; target: string; label?: string; type: string } => {
   console.log('🔍 解析连接线:', edgeStr);
   
-  // 各种连接线格式 - 支持带方括号、圆括号、花括号的节点
+  // 各种连接线格式 - 支持带方括号、圆括号、花括号的节点和中文字符
   const patterns = [
-    // A[文本] --> B[文本] (带标签的节点)
-    /^([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-->\s*([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
-    // A[文本] --- B[文本] (实线)
-    /^([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*---\s*([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
-    // A[文本] -.-> B[文本] (虚线)
-    /^([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-\.->\s*([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
-    // A[文本] ==> B[文本] (粗线)
-    /^([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*==>\s*([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
-    // A[文本] -->|标签| B[文本] (带标签的连接线)
-    /^([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-->\|([^|]+)\|\s*([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
-    // A[文本] -.->|标签| B[文本] (虚线带标签)
-    /^([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-\.->\|([^|]+)\|\s*([A-Za-z0-9_]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
-    // 简单格式 A --> B
-    /^([A-Za-z0-9_]+)\s*-->\s*([A-Za-z0-9_]+)$/,
-    // 简单格式 A --- B
-    /^([A-Za-z0-9_]+)\s*---\s*([A-Za-z0-9_]+)$/,
-    // 简单格式 A -.-> B
-    /^([A-Za-z0-9_]+)\s*-\.->\s*([A-Za-z0-9_]+)$/,
-    // 简单格式 A ==> B
-    /^([A-Za-z0-9_]+)\s*==>\s*([A-Za-z0-9_]+)$/
+    // A[文本] --> B[文本] (带标签的节点，支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-->\s*([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
+    // A[文本] --- B[文本] (实线，支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*---\s*([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
+    // A[文本] -.-> B[文本] (虚线，支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-\.->\s*([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
+    // A[文本] ==> B[文本] (粗线，支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*==>\s*([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
+    // A[文本] -->|标签| B[文本] (带标签的连接线，支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-->\|([^|]+)\|\s*([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
+    // A[文本] -.->|标签| B[文本] (虚线带标签，支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)\s*-\.->\|([^|]+)\|\s*([A-Za-z0-9_\u4e00-\u9fff]+(?:\[[^\]]*\]|\([^)]*\)|\{[^}]*\})?)$/,
+    // 简单格式 A --> B (支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\s*-->\s*([A-Za-z0-9_\u4e00-\u9fff]+)$/,
+    // 简单格式 A --- B (支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\s*---\s*([A-Za-z0-9_\u4e00-\u9fff]+)$/,
+    // 简单格式 A -.-> B (支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\s*-\.->\s*([A-Za-z0-9_\u4e00-\u9fff]+)$/,
+    // 简单格式 A ==> B (支持中文)
+    /^([A-Za-z0-9_\u4e00-\u9fff]+)\s*==>\s*([A-Za-z0-9_\u4e00-\u9fff]+)$/
   ];
 
   for (const pattern of patterns) {
     const match = edgeStr.trim().match(pattern);
     if (match) {
-      // 提取源节点和目标节点的ID（去掉方括号等装饰）
+      // 提取源节点和目标节点的ID（去掉方括号等装饰，支持中文）
       const extractNodeId = (nodeStr: string): string => {
-        const idMatch = nodeStr.match(/^([A-Za-z0-9_]+)/);
+        const idMatch = nodeStr.match(/^([A-Za-z0-9_\u4e00-\u9fff]+)/);
         return idMatch ? idMatch[1] : nodeStr;
       };
 
@@ -196,9 +222,11 @@ const parseEdge = (edgeStr: string): { source: string; target: string; label?: s
 // 自动布局算法
 const autoLayout = (nodes: FlowNode[], edges: FlowEdge[], direction: string) => {
   console.log('🎨 开始自动布局，方向:', direction);
-  
-  const nodeSpacing = 150;
-  const levelSpacing = 200;
+  console.log('📊 节点列表:', nodes.map(n => ({ id: n.id, label: n.data.label })));
+  console.log('🔗 连接列表:', edges.map(e => ({ source: e.source, target: e.target, label: e.label })));
+
+  const nodeSpacing = 200; // 增加节点间距
+  const levelSpacing = 250; // 增加层级间距
   
   // 构建图的层级结构
   const levels: string[][] = [];
@@ -208,38 +236,49 @@ const autoLayout = (nodes: FlowNode[], edges: FlowEdge[], direction: string) => 
   // 找到根节点（没有入边的节点）
   const hasIncoming = new Set(edges.map(e => e.target));
   const roots = nodes.filter(n => !hasIncoming.has(n.id)).map(n => n.id);
-  
+
+  console.log('🌳 有入边的节点:', Array.from(hasIncoming));
+  console.log('🌱 根节点:', roots);
+
   if (roots.length === 0 && nodes.length > 0) {
     // 如果没有明显的根节点，选择第一个
     roots.push(nodes[0].id);
+    console.log('⚠️ 没有找到根节点，使用第一个节点作为根:', nodes[0].id);
   }
   
   // BFS遍历构建层级
   let currentLevel = 0;
   let queue = [...roots];
-  
+
+  console.log('🔄 开始BFS遍历，初始队列:', queue);
+
   while (queue.length > 0) {
     const nextQueue: string[] = [];
     levels[currentLevel] = [];
-    
+
+    console.log(`📊 处理第 ${currentLevel} 层，当前队列:`, queue);
+
     for (const nodeId of queue) {
       if (!visited.has(nodeId)) {
         visited.add(nodeId);
         levels[currentLevel].push(nodeId);
         nodeToLevel.set(nodeId, currentLevel);
-        
+
         // 找到子节点
         const children = edges
           .filter(e => e.source === nodeId)
           .map(e => e.target)
           .filter(id => !visited.has(id));
-        
+
+        console.log(`🌿 节点 ${nodeId} 的子节点:`, children);
         nextQueue.push(...children);
       }
     }
-    
+
+    console.log(`✅ 第 ${currentLevel} 层完成，节点:`, levels[currentLevel]);
     currentLevel++;
-    queue = nextQueue;
+    queue = [...new Set(nextQueue)]; // 去重，避免重复添加同一个节点
+    console.log(`➡️ 下一层队列:`, queue);
   }
   
   // 处理未访问的节点
@@ -253,8 +292,11 @@ const autoLayout = (nodes: FlowNode[], edges: FlowEdge[], direction: string) => 
   
   // 计算位置
   const isVertical = direction === 'TB' || direction === 'BT';
-  
+  console.log('📐 布局方向:', isVertical ? '垂直' : '水平');
+  console.log('📊 层级结构:', levels.map((level, i) => `Level ${i}: [${level.join(', ')}]`));
+
   levels.forEach((level, levelIndex) => {
+    console.log(`🎯 处理第 ${levelIndex} 层，包含 ${level.length} 个节点:`, level);
     level.forEach((nodeId, nodeIndex) => {
       const node = nodes.find(n => n.id === nodeId);
       if (node) {
@@ -269,11 +311,23 @@ const autoLayout = (nodes: FlowNode[], edges: FlowEdge[], direction: string) => 
             y: (nodeIndex - (level.length - 1) / 2) * nodeSpacing
           };
         }
+        console.log(`📍 节点 ${nodeId} 位置:`, node.position);
       }
     });
   });
-  
+
   console.log('✅ 自动布局完成，层级数:', levels.length);
+  console.log('📋 最终节点位置:', nodes.map(n => ({ id: n.id, label: n.data.label, position: n.position })));
+
+  // 检查节点数据完整性
+  nodes.forEach(node => {
+    if (!node.id || !node.data || !node.data.label || !node.position) {
+      console.error('❌ 节点数据不完整:', node);
+    } else {
+      console.log('✅ 节点数据完整:', { id: node.id, label: node.data.label, position: node.position });
+    }
+  });
+
   return nodes;
 };
 
@@ -321,12 +375,12 @@ export const parseMermaidToFlow = (mermaidCode: string): ParsedFlow => {
       if (edgeInfo.source && edgeInfo.target) {
         // 从原始行中提取完整的节点信息
         const extractNodeFromLine = (nodeId: string, fullLine: string): { id: string; label: string; shape: string } => {
-          // 在行中查找这个节点的完整定义
+          // 在行中查找这个节点的完整定义（支持中文）
           const patterns = [
-            new RegExp(`(${nodeId})\\[([^\\]]+)\\]`), // A[文本]
-            new RegExp(`(${nodeId})\\(([^)]+)\\)`),   // A(文本)
-            new RegExp(`(${nodeId})\\{([^}]+)\\}`),   // A{文本}
-            new RegExp(`(${nodeId})\\(\\(([^)]+)\\)\\)`) // A((文本))
+            new RegExp(`(${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\[([^\\]]+)\\]`), // A[文本]
+            new RegExp(`(${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\(([^)]+)\\)`),   // A(文本)
+            new RegExp(`(${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\{([^}]+)\\}`),   // A{文本}
+            new RegExp(`(${nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\(\\(([^)]+)\\)\\)`) // A((文本))
           ];
 
           for (const pattern of patterns) {
@@ -349,6 +403,7 @@ export const parseMermaidToFlow = (mermaidCode: string): ParsedFlow => {
           if (!nodeIds.has(nodeId)) {
             nodeIds.add(nodeId);
             const nodeInfo = extractNodeFromLine(nodeId, line);
+            console.log(`➕ 添加节点: ${nodeId}, 标签: ${nodeInfo.label}, 形状: ${nodeInfo.shape}`);
             nodes.push({
               id: nodeId,
               type: 'default',
@@ -356,6 +411,8 @@ export const parseMermaidToFlow = (mermaidCode: string): ParsedFlow => {
               data: { label: nodeInfo.label },
               style: getNodeStyle(nodeInfo.shape)
             });
+          } else {
+            console.log(`⚠️ 节点 ${nodeId} 已存在，跳过`);
           }
         });
         

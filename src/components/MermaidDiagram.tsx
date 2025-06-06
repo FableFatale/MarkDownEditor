@@ -32,6 +32,11 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
 
   console.log('🗺️ MiniMap状态:', showMiniMap);
 
+  // 添加useEffect来监听状态变化
+  React.useEffect(() => {
+    console.log('🔄 MiniMap状态变化:', showMiniMap);
+  }, [showMiniMap]);
+
   // 解析Mermaid代码
   const flowData = useMemo(() => {
     try {
@@ -45,8 +50,28 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
     }
   }, [chart]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(flowData?.nodes || []);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(flowData?.edges || []);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // 当flowData变化时，手动更新nodes和edges
+  React.useEffect(() => {
+    if (flowData) {
+      console.log('🎯 ReactFlow接收到的节点数据:', flowData.nodes);
+      console.log('🎯 ReactFlow接收到的边数据:', flowData.edges);
+
+      // 手动设置节点和边
+      setNodes(flowData.nodes);
+      setEdges(flowData.edges);
+
+      console.log('🔄 手动更新ReactFlow状态');
+    }
+  }, [flowData, setNodes, setEdges]);
+
+  // 调试当前状态
+  React.useEffect(() => {
+    console.log('🎯 当前nodes状态:', nodes);
+    console.log('🎯 当前edges状态:', edges);
+  }, [nodes, edges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -145,8 +170,15 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('🔄 切换MiniMap状态:', showMiniMap, '->', !showMiniMap);
-                setShowMiniMap(!showMiniMap);
+                console.log('🔄 按钮被点击！当前状态:', showMiniMap, '即将切换到:', !showMiniMap);
+                const newState = !showMiniMap;
+                setShowMiniMap(newState);
+                console.log('✅ setShowMiniMap 已调用，新状态:', newState);
+
+                // 延迟检查状态是否真的更新了
+                setTimeout(() => {
+                  console.log('⏰ 延迟检查 - 期望状态:', newState);
+                }, 100);
               }}
               sx={{
                 color: theme.palette.primary.contrastText,
@@ -175,6 +207,10 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
             animated: false,
             style: { strokeWidth: 2 }
           }}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+          selectNodesOnDrag={false}
         >
           <Controls />
           {showMiniMap && (
@@ -188,6 +224,8 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
               position="bottom-right"
             />
           )}
+          {/* 调试信息 */}
+          {console.log('🎯 渲染时 MiniMap 显示状态:', showMiniMap, showMiniMap ? '应该显示' : '应该隐藏')}
           <Background
             variant={BackgroundVariant.Dots}
             gap={12}

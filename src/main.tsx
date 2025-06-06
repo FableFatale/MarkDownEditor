@@ -26,6 +26,8 @@ import SingleRowEditorDemo from './SingleRowEditorDemo'
 import TestPage from './TestPage'
 // 导入主应用组件
 import App from './App'
+// 导入Mermaid测试组件
+import MermaidTest from './MermaidTest'
 
 // 导入主样式文件
 import './styles/main.css'
@@ -58,6 +60,7 @@ const showMinimalTailwind = urlParams.has('minimal-tailwind');
 const showSimpleTailwindDemo = urlParams.has('simple-tailwind-demo');
 const showSingleRow = urlParams.has('single-row');
 const showTestPage = urlParams.has('test-page');
+const showMermaidTest = urlParams.has('mermaid-test');
 
 // 默认显示主应用程序
 let componentToRender = <App />;
@@ -103,6 +106,8 @@ if (showTest) {
   componentToRender = <SingleRowEditorDemo />;
 } else if (showTestPage) {
   componentToRender = <TestPage />;
+} else if (showMermaidTest) {
+  componentToRender = <MermaidTest />;
 } else if (showArticleManager) {
   componentToRender = <ArticleManagementDemo />;
 }
@@ -119,6 +124,7 @@ if (showTest) {
       showSimpleTailwindDemo ? 'SimpleTailwindDemo' :
       showSingleRow ? 'SingleRowEditorDemo' :
       showTestPage ? 'TestPage' :
+      showMermaidTest ? 'MermaidTest' :
       showModern ? 'ModernMarkdownEditor' :
       'App (默认主程序)'
     );
