@@ -31,10 +31,11 @@ export const MarkdownEditorContainer = ({
   const theme = useTheme();
   const [content, setContent] = useState(initialValue);
   const [previewContent, setPreviewContent] = useState(initialValue);
-  const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.4); // 初始编辑器宽度设为40%，给预览区域留出更多空间
+  const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.45); // 初始编辑器宽度设为45%，给预览区域更多空间
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewUpdating, setIsPreviewUpdating] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // 使用主题状态而不是本地状态
+  const isDarkMode = theme.palette.mode === 'dark';
   const [headingStyle, setHeadingStyle] = useState<string>('default');
   const internalPreviewRef = useRef<HTMLDivElement>(null);
   const previewRef = externalPreviewRef || internalPreviewRef;
@@ -70,10 +71,7 @@ export const MarkdownEditorContainer = ({
     setIsLoading(loading);
   }, []);
 
-  // 切换暗黑模式
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => !prev);
-  }, []);
+  // 主题切换现在由父组件处理
 
   // 清理debounce函数
   useEffect(() => {
@@ -86,9 +84,9 @@ export const MarkdownEditorContainer = ({
   useEffect(() => {
     const handleResize = () => {
       // 确保编辑器宽度在窗口调整时保持合理比例，给预览区域留出足够空间
-      const maxAllowedWidth = window.innerWidth * 0.7;
+      const maxAllowedWidth = window.innerWidth * 0.65;
       if (editorWidth > maxAllowedWidth) {
-        setEditorWidth(window.innerWidth * 0.4); // 重置为默认40%宽度
+        setEditorWidth(window.innerWidth * 0.45); // 重置为默认45%宽度
       }
     };
 
@@ -100,7 +98,7 @@ export const MarkdownEditorContainer = ({
   const handleResize = (_: any, { size }: { size: { width: number } }) => {
     // 限制最小宽度和最大宽度
     const minWidth = 300;
-    const maxWidth = window.innerWidth * 0.7; // 允许编辑器占据更大空间，但仍保留足够的预览区域
+    const maxWidth = window.innerWidth * 0.65; // 限制编辑器最大宽度，确保预览区域有足够空间
 
     let newWidth = size.width;
     if (newWidth < minWidth) newWidth = minWidth;
@@ -109,9 +107,17 @@ export const MarkdownEditorContainer = ({
     setEditorWidth(newWidth);
   };
 
-  // 设置data-theme属性以支持CSS变量
+  // 设置data-theme属性和class以支持CSS变量和Tailwind深色模式
   React.useEffect(() => {
+    const isDark = theme.palette.mode === 'dark';
     document.documentElement.setAttribute('data-theme', theme.palette.mode);
+
+    // 为Tailwind深色模式添加/移除dark类
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [theme.palette.mode]);
 
   return (
@@ -194,7 +200,7 @@ export const MarkdownEditorContainer = ({
                   content={content}
                   onChange={handleContentChange}
                   isDarkMode={isDarkMode}
-                  onToggleTheme={toggleDarkMode}
+                  onToggleTheme={() => {}} // 主题切换由父组件处理
                   largeFileThreshold={largeFileThreshold}
                   onLoadingStateChange={handleLoadingStateChange}
                   onFormatText={onFormatText}
@@ -207,17 +213,19 @@ export const MarkdownEditorContainer = ({
         {/* 预览区域 */}
         <Box
           ref={previewRef}
+          className={theme.palette.mode === 'dark' ? 'dark' : ''}
           sx={{
             flex: 1,
             height: '100%',
             overflow: 'auto',
             padding: 3,
-            backgroundColor: theme.palette.background.default,
+            backgroundColor: theme.palette.mode === 'dark' ? '#1A1B1E' : '#FFFFFF',
             borderLeft: `1px solid ${theme.palette.divider}`,
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             minWidth: 0, // 确保弹性布局中不会溢出
+            color: theme.palette.text.primary,
           }}
         >
           <Box sx={{
@@ -228,7 +236,7 @@ export const MarkdownEditorContainer = ({
               pb: 2,
               position: 'sticky',
               top: 0,
-              backgroundColor: theme.palette.background.default,
+              backgroundColor: theme.palette.mode === 'dark' ? '#1A1B1E' : '#FFFFFF',
               zIndex: 10,
               backdropFilter: 'blur(8px)',
               borderRadius: '4px 4px 0 0',

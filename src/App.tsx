@@ -25,48 +25,30 @@ import { MarkdownEditorContainer } from './components/editor/MarkdownEditorConta
 import { useAutoSave } from './hooks/useAutoSave';
 import SaveStatusIndicator from './components/SaveStatusIndicator';
 import VersionHistory from './components/VersionHistory';
+import OutlineNavigator from './components/OutlineNavigator';
 
 const App: React.FC = () => {
   // 基本状态
   const [value, setValue] = useState(`# 欢迎使用 Markdown 编辑器
 
-这是一个功能完整的 Markdown 编辑器，支持：
+这是一个功能完整的现代化 Markdown 编辑器。
 
-## 功能特性
-
-- **实时预览**：左右分屏实时预览
-- **主题切换**：支持明暗主题
-- **全屏模式**：专注写作体验
-- **字数统计**：实时显示字数、字符数
-- **设置系统**：完整的主题和布局设置
-- **Mermaid图表**：支持流程图、时序图等
+## 主要功能
+- **实时预览** - 左右分屏实时渲染
+- **多格式导出** - PDF、HTML、图片等格式
+- **文章管理** - 分类、搜索、版本控制
+- **大纲模式** - 基于标题的导航目录
+- **文字转换** - HTML/纯文本转Markdown
+- **封面生成** - 2.35:1比例封面图
 
 ## 快捷键
+- **Ctrl+B** - 粗体
+- **Ctrl+I** - 斜体
+- **Ctrl+S** - 手动保存
 
-- **Ctrl+B**：粗体
-- **Ctrl+I**：斜体
-- **Ctrl+K**：插入链接
+> 💡 更多功能请查看工具栏右侧的设置菜单 → 使用说明
 
-## 代码示例
-
-\`\`\`javascript
-function hello() {
-  console.log("Hello, World!");
-}
-\`\`\`
-
-## Mermaid流程图测试
-
-请查看右侧预览区域，应该能看到一个简单的流程图：
-
-\`\`\`mermaid
-graph LR
-    A[开始] --> B[结束]
-\`\`\`
-
-如果没有看到图表，请检查浏览器控制台的调试信息。
-
-开始使用这个强大的 Markdown 编辑器吧！`);
+开始编写您的内容...`);
 
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -75,6 +57,7 @@ graph LR
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
   const [layoutDialogOpen, setLayoutDialogOpen] = useState(false);
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false);
+  const [outlineVisible, setOutlineVisible] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
@@ -176,6 +159,19 @@ graph LR
     }
   }, []);
 
+  // 应用主题到文档根元素
+  useEffect(() => {
+    const isDark = themeMode === 'dark';
+    document.documentElement.setAttribute('data-theme', themeMode);
+
+    // 为Tailwind深色模式添加/移除dark类
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [themeMode]);
+
   // 设置处理函数
   const handleThemeSettings = () => {
     setThemeDialogOpen(true);
@@ -191,6 +187,35 @@ graph LR
 
   const handleVersionHistoryClose = () => {
     setVersionHistoryOpen(false);
+  };
+
+  const handleToggleOutline = () => {
+    setOutlineVisible(!outlineVisible);
+  };
+
+  const handleHeadingClick = (line: number) => {
+    // 这里可以实现跳转到指定行的功能
+    // 目前先显示一个提示
+    setSnackbarMessage(`跳转到第 ${line} 行`);
+    setSnackbarOpen(true);
+  };
+
+  const handleArticleManage = () => {
+    setSnackbarMessage('文章管理功能已打开');
+    setSnackbarOpen(true);
+  };
+
+  const handleArticleEdit = (articleId: string) => {
+    // 这里可以实现加载指定文章的功能
+    setSnackbarMessage(`正在编辑文章: ${articleId}`);
+    setSnackbarOpen(true);
+  };
+
+  const handleArticleCreate = () => {
+    // 创建新文章
+    setValue('# 新文章\n\n开始编写您的内容...');
+    setSnackbarMessage('已创建新文章');
+    setSnackbarOpen(true);
   };
 
   const handleRestoreVersion = async (versionId: string) => {
@@ -310,6 +335,14 @@ graph LR
         formatText = '1. 列表项1\n2. 列表项2\n3. 列表项3';
         needsNewLine = true;
         break;
+      case 'custom-text':
+        if (options?.text) {
+          formatText = options.text;
+          needsNewLine = true;
+        } else {
+          return;
+        }
+        break;
       default:
         return;
     }
@@ -405,16 +438,46 @@ graph LR
             saveState={saveState}
             onManualSave={manualSave}
             onVersionHistory={handleVersionHistory}
+            onToggleOutline={handleToggleOutline}
+            onHeadingClick={handleHeadingClick}
+            onArticleManage={handleArticleManage}
+            onArticleEdit={handleArticleEdit}
+            onArticleCreate={handleArticleCreate}
           />
 
-          {/* 使用新的MarkdownEditorContainer组件 */}
-          <MarkdownEditorContainer
-            initialValue={value}
-            onContentChange={setValue}
-            className="flex-1"
-            previewRef={previewRef}
-            onFormatText={handleFormatText}
-          />
+          {/* 主编辑区域 */}
+          <Box sx={{ display: 'flex', flex: 1, position: 'relative' }}>
+            {/* 使用新的MarkdownEditorContainer组件 */}
+            <MarkdownEditorContainer
+              initialValue={value}
+              onContentChange={setValue}
+              className="flex-1"
+              previewRef={previewRef}
+              onFormatText={handleFormatText}
+            />
+
+            {/* 大纲导航器 */}
+            {outlineVisible && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 16,
+                  zIndex: 1000,
+                  maxHeight: 'calc(100vh - 200px)',
+                  overflow: 'auto'
+                }}
+              >
+                <OutlineNavigator
+                  content={value}
+                  onHeadingClick={handleHeadingClick}
+                  isVisible={outlineVisible}
+                  onToggleVisibility={handleToggleOutline}
+                  onClose={() => setOutlineVisible(false)}
+                />
+              </Box>
+            )}
+          </Box>
         </Box>
 
         {/* 主题设置对话框 */}

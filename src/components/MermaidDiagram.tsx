@@ -21,94 +21,84 @@ interface MermaidDiagramProps {
   className?: string;
 }
 
-export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
+export const MermaidDiagram: React.FC<MermaidDiagramProps> = React.memo(({
   chart,
   className = ''
 }) => {
-  console.log('🚀 ReactFlow版本的MermaidDiagram开始渲染，chart:', chart?.substring(0, 50));
-
   const theme = useTheme();
   const [showMiniMap, setShowMiniMap] = useState(true);
-
-  console.log('🗺️ MiniMap状态:', showMiniMap);
-
-  // 添加useEffect来监听状态变化
-  React.useEffect(() => {
-    console.log('🔄 MiniMap状态变化:', showMiniMap);
-  }, [showMiniMap]);
 
   // 解析Mermaid代码
   const flowData = useMemo(() => {
     try {
-      console.log('🔍 开始解析Mermaid代码...');
       const result = parseMermaidToFlow(chart);
-      console.log('✅ 解析成功:', result);
       return result;
     } catch (error) {
-      console.error('❌ 解析失败:', error);
+      console.error('❌ Mermaid解析失败:', error);
       return null;
     }
   }, [chart]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
-  // 当flowData变化时，手动更新nodes和edges
-  React.useEffect(() => {
-    if (flowData) {
-      console.log('🎯 ReactFlow接收到的节点数据:', flowData.nodes);
-      console.log('🎯 ReactFlow接收到的边数据:', flowData.edges);
-
-      // 验证节点数据完整性
-      const validNodes = flowData.nodes.filter(node => {
-        const isValid = node && node.id && node.data && node.data.label && node.position;
-        if (!isValid) {
-          console.error('❌ 无效节点:', node);
-        }
-        return isValid;
-      });
-      const validEdges = flowData.edges.filter(edge => {
-        const isValid = edge && edge.id && edge.source && edge.target;
-        if (!isValid) {
-          console.error('❌ 无效边:', edge);
-        }
-        return isValid;
-      });
-
-      console.log('✅ 有效节点数量:', validNodes.length, '/', flowData.nodes.length);
-      console.log('✅ 有效边数量:', validEdges.length, '/', flowData.edges.length);
-      console.log('📋 有效节点详情:', validNodes);
-      console.log('📋 有效边详情:', validEdges);
-
-      // 手动设置节点和边
-      if (validNodes.length === 0 && flowData.nodes.length > 0) {
-        console.warn('⚠️ 所有节点都被过滤了，强制使用原始数据');
-        setNodes(flowData.nodes);
-      } else {
-        setNodes(validNodes);
-      }
-
-      if (validEdges.length === 0 && flowData.edges.length > 0) {
-        console.warn('⚠️ 所有边都被过滤了，强制使用原始数据');
-        setEdges(flowData.edges);
-      } else {
-        setEdges(validEdges);
-      }
-
-      console.log('🔄 手动更新ReactFlow状态');
+  // 直接从 flowData 计算 nodes 和 edges，避免状态同步问题
+  const nodes = useMemo(() => {
+    if (!flowData || !flowData.nodes) {
+      return [];
     }
-  }, [flowData, setNodes, setEdges]);
 
-  // 调试当前状态
-  React.useEffect(() => {
-    console.log('🎯 当前nodes状态:', nodes);
-    console.log('🎯 当前edges状态:', edges);
-  }, [nodes, edges]);
+    // 简化验证逻辑，只检查必要字段
+    const validNodes = flowData.nodes.filter(node => {
+      return node && node.id && node.data && node.position;
+    });
+
+    return validNodes.length > 0 ? validNodes : flowData.nodes; // 如果验证失败，使用原始数据
+  }, [flowData]);
+
+  const edges = useMemo(() => {
+    if (!flowData || !flowData.edges) {
+      return [];
+    }
+
+    // 简化验证逻辑
+    const validEdges = flowData.edges.filter(edge => {
+      return edge && edge.id && edge.source && edge.target;
+    });
+
+    return validEdges.length > 0 ? validEdges : flowData.edges; // 如果验证失败，使用原始数据
+  }, [flowData]);
+
+  // 使用 ReactFlow 的 hooks 来管理状态变化
+  const [, , onNodesChange] = useNodesState(nodes);
+  const [, , onEdgesChange] = useEdgesState(edges);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      // 由于我们使用的是只读模式，这里不需要实际处理连接
+    },
+    []
   );
+
+  // 优化小地图切换函数
+  const toggleMiniMap = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMiniMap(prev => !prev);
+  }, []);
+
+  // 优化 MiniMap 样式计算
+  const miniMapStyle = useMemo(() => ({
+    backgroundColor: theme.palette.mode === 'dark' ? '#27282B' : '#F7F8FA',
+    border: `1px solid ${theme.palette.divider}`,
+    width: 120,
+    height: 80
+  }), [theme.palette.mode, theme.palette.divider]);
+
+  const miniMapNodeColor = useMemo(() =>
+    theme.palette.mode === 'dark' ? '#5E6AD2' : '#1976d2'
+  , [theme.palette.mode]);
+
+  const miniMapMaskColor = useMemo(() =>
+    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+  , [theme.palette.mode]);
 
   // 如果解析失败，显示错误信息
   if (!flowData) {
@@ -199,19 +189,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           <Tooltip title={showMiniMap ? "隐藏小地图" : "显示小地图"}>
             <IconButton
               size="small"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔄 按钮被点击！当前状态:', showMiniMap, '即将切换到:', !showMiniMap);
-                const newState = !showMiniMap;
-                setShowMiniMap(newState);
-                console.log('✅ setShowMiniMap 已调用，新状态:', newState);
-
-                // 延迟检查状态是否真的更新了
-                setTimeout(() => {
-                  console.log('⏰ 延迟检查 - 期望状态:', newState);
-                }, 100);
-              }}
+              onClick={toggleMiniMap}
               sx={{
                 color: theme.palette.primary.contrastText,
                 '&:hover': {
@@ -260,7 +238,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
           <Controls />
 
           {/* 临时调试信息显示 */}
-          {nodes.length === 0 && (
+          {nodes.length === 0 && flowData && flowData.nodes.length > 0 && (
             <div style={{
               position: 'absolute',
               top: '50%',
@@ -287,17 +265,13 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
 
           {showMiniMap && (
             <MiniMap
-              style={{
-                backgroundColor: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
-                width: 120,
-                height: 80
-              }}
+              style={miniMapStyle}
               position="bottom-right"
+              nodeColor={miniMapNodeColor}
+              maskColor={miniMapMaskColor}
             />
           )}
-          {/* 调试信息 */}
-          {console.log('🎯 渲染时 MiniMap 显示状态:', showMiniMap, showMiniMap ? '应该显示' : '应该隐藏')}
+
           <Background
             variant={BackgroundVariant.Dots}
             gap={12}
@@ -308,9 +282,10 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
       </Box>
     </Box>
   );
-
-
-};
+}, (prevProps, nextProps) => {
+  // 只有当 chart 内容真正改变时才重新渲染
+  return prevProps.chart === nextProps.chart && prevProps.className === nextProps.className;
+});
 
 // 用于检测是否为Mermaid代码块的工具函数
 const isMermaidCode = (language: string): boolean => {

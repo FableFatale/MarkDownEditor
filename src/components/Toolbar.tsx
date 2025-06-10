@@ -10,7 +10,13 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Divider
+  Divider,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  DialogTitle,
+  Typography,
+  Button
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -34,12 +40,25 @@ import {
   GetApp,
   CloudUpload,
   PhotoCamera,
-  History
+  History,
+  FormatListBulleted as OutlineIcon,
+  Transform as ConvertIcon,
+  Folder as ArticleIcon,
+  LibraryBooks as LibraryIcon,
+  Close as CloseIcon,
+  Image as ImageIcon,
+  Help as HelpIcon
 } from '@mui/icons-material';
 import WordCounter from './WordCounter';
 import PdfExporter from './PdfExporter';
 import { ImageUploadDialog } from './ImageUploadDialog';
 import SaveStatusIndicator from './SaveStatusIndicator';
+import OutlineNavigator from './OutlineNavigator';
+import TextToMarkdownConverter from './TextToMarkdownConverter';
+import { ArticleManager } from './ArticleManager';
+import MultiFormatExporter from './MultiFormatExporter';
+import CoverImageGenerator from './CoverImageGenerator';
+import UserGuide from './UserGuide';
 import { SaveState } from '../hooks/useAutoSave';
 
 interface ToolbarProps {
@@ -55,6 +74,11 @@ interface ToolbarProps {
   saveState?: SaveState;
   onManualSave?: () => void;
   onVersionHistory?: () => void;
+  onToggleOutline?: () => void;
+  onHeadingClick?: (line: number) => void;
+  onArticleManage?: () => void;
+  onArticleEdit?: (articleId: string) => void;
+  onArticleCreate?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -69,12 +93,23 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onFormatText,
   saveState,
   onManualSave,
-  onVersionHistory
+  onVersionHistory,
+  onToggleOutline,
+  onHeadingClick,
+  onArticleManage,
+  onArticleEdit,
+  onArticleCreate
 }) => {
   const theme = useTheme();
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
+  const [pdfExportOpen, setPdfExportOpen] = useState(false);
+  const [textConverterOpen, setTextConverterOpen] = useState(false);
+  const [articleManagerOpen, setArticleManagerOpen] = useState(false);
+  const [multiFormatExportOpen, setMultiFormatExportOpen] = useState(false);
+  const [coverGeneratorOpen, setCoverGeneratorOpen] = useState(false);
+  const [userGuideOpen, setUserGuideOpen] = useState(false);
   const settingsOpen = Boolean(settingsAnchorEl);
   const exportOpen = Boolean(exportAnchorEl);
 
@@ -93,8 +128,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
       items: [
         { icon: <Code />, tooltip: '代码块', format: 'code' },
         { icon: <InsertLink />, tooltip: '链接 (Ctrl+K)', format: 'link' },
-        { icon: <Image />, tooltip: '图片', format: 'image' },
-        { icon: <CloudUpload />, tooltip: '上传图片 (支持拖拽和粘贴)', format: 'upload-image' },
+        { icon: <CloudUpload />, tooltip: '上传图片', format: 'upload-image' },
         { icon: <GridOn />, tooltip: '表格', format: 'table' },
       ],
     },
@@ -126,7 +160,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const handleExport = (format: string) => {
     switch (format) {
       case 'pdf':
-        exportAsPDF();
+        // 使用完整的PDF导出组件
+        setPdfExportOpen(true);
+        break;
+      case 'multi':
+        // 使用多格式导出组件
+        setMultiFormatExportOpen(true);
         break;
       case 'html':
         exportAsHTML();
@@ -139,24 +178,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         break;
     }
     handleExportClose();
-  };
-
-  const exportAsPDF = () => {
-    if (previewRef?.current) {
-      import('html2pdf.js').then((html2pdf) => {
-        const element = previewRef.current;
-        const opt = {
-          margin: 1,
-          filename: 'markdown-document.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-        html2pdf.default().set(opt).from(element).save();
-      }).catch(() => {
-        alert('PDF导出功能需要安装html2pdf.js库');
-      });
-    }
   };
 
   const exportAsHTML = () => {
@@ -260,7 +281,10 @@ ${previewRef?.current?.innerHTML || ''}
       elevation={0}
       sx={{
         top: 0,
-        backgroundColor: alpha(theme.palette.background.default, 0.85),
+        backgroundColor: alpha(
+          theme.palette.mode === 'dark' ? '#1A1B1E' : '#FFFFFF',
+          0.85
+        ),
         borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
         backdropFilter: 'blur(10px)',
         transition: theme.transitions.create(
@@ -268,7 +292,7 @@ ${previewRef?.current?.innerHTML || ''}
           { duration: 200 }
         ),
         '&:hover': {
-          backgroundColor: theme.palette.background.default,
+          backgroundColor: theme.palette.mode === 'dark' ? '#1A1B1E' : '#FFFFFF',
           backdropFilter: 'blur(12px)',
         }
       }}
@@ -369,7 +393,7 @@ ${previewRef?.current?.innerHTML || ''}
         <Box sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
+          gap: 0.5,
         }}>
           {/* 保存状态指示器 */}
           {saveState && (
@@ -499,121 +523,7 @@ ${previewRef?.current?.innerHTML || ''}
             </IconButton>
           </Tooltip>
 
-          {/* 主题切换按钮 */}
-          <Tooltip
-            title={themeMode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-            placement="bottom"
-            arrow
-            componentsProps={{
-              tooltip: {
-                sx: {
-                  bgcolor: alpha(theme.palette.grey[900], 0.9),
-                  color: 'white',
-                  fontSize: '0.75rem',
-                  borderRadius: 1,
-                  backdropFilter: 'blur(10px)',
-                }
-              }
-            }}
-          >
-            <IconButton
-              size="small"
-              onClick={onToggleTheme}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                transition: theme.transitions.create([
-                  'background-color',
-                  'transform',
-                  'box-shadow',
-                  'color'
-                ], {
-                  duration: 200,
-                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                }),
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                  transform: 'translateY(-1px) scale(1.05)',
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
-                  color: theme.palette.primary.main,
-                  '& svg': {
-                    transform: 'scale(1.1)',
-                  }
-                },
-                '&:active': {
-                  transform: 'translateY(0) scale(0.98)',
-                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
-                },
-                '& svg': {
-                  fontSize: '1.1rem',
-                  transition: theme.transitions.create(['transform', 'color'], {
-                    duration: 200
-                  })
-                }
-              }}
-            >
-              {themeMode === 'dark' ? <LightMode /> : <DarkMode />}
-            </IconButton>
-          </Tooltip>
 
-          {/* 全屏切换按钮 */}
-          <Tooltip
-            title={isFullScreen ? '退出全屏' : '进入全屏'}
-            placement="bottom"
-            arrow
-            componentsProps={{
-              tooltip: {
-                sx: {
-                  bgcolor: alpha(theme.palette.grey[900], 0.9),
-                  color: 'white',
-                  fontSize: '0.75rem',
-                  borderRadius: 1,
-                  backdropFilter: 'blur(10px)',
-                }
-              }
-            }}
-          >
-            <IconButton
-              size="small"
-              onClick={onToggleFullScreen}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                transition: theme.transitions.create([
-                  'background-color',
-                  'transform',
-                  'box-shadow',
-                  'color'
-                ], {
-                  duration: 200,
-                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                }),
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                  transform: 'translateY(-1px) scale(1.05)',
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
-                  color: theme.palette.primary.main,
-                  '& svg': {
-                    transform: 'scale(1.1)',
-                  }
-                },
-                '&:active': {
-                  transform: 'translateY(0) scale(0.98)',
-                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
-                },
-                '& svg': {
-                  fontSize: '1.1rem',
-                  transition: theme.transitions.create(['transform', 'color'], {
-                    duration: 200
-                  })
-                }
-              }}
-            >
-              {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
-            </IconButton>
-          </Tooltip>
 
           {/* 设置按钮 */}
           <Tooltip
@@ -727,6 +637,45 @@ ${previewRef?.current?.innerHTML || ''}
               </ListItemIcon>
               <ListItemText>布局设置</ListItemText>
             </MenuItem>
+
+            <Divider />
+
+            <MenuItem onClick={() => { onToggleOutline?.(); handleSettingsClose(); }}>
+              <ListItemIcon>
+                <OutlineIcon />
+              </ListItemIcon>
+              <ListItemText>大纲模式</ListItemText>
+            </MenuItem>
+
+            <MenuItem onClick={() => { setTextConverterOpen(true); handleSettingsClose(); }}>
+              <ListItemIcon>
+                <ConvertIcon />
+              </ListItemIcon>
+              <ListItemText>文字转换</ListItemText>
+            </MenuItem>
+
+            <MenuItem onClick={() => { setArticleManagerOpen(true); handleSettingsClose(); }}>
+              <ListItemIcon>
+                <LibraryIcon />
+              </ListItemIcon>
+              <ListItemText>文章管理</ListItemText>
+            </MenuItem>
+
+            <MenuItem onClick={() => { setCoverGeneratorOpen(true); handleSettingsClose(); }}>
+              <ListItemIcon>
+                <ImageIcon />
+              </ListItemIcon>
+              <ListItemText>封面生成</ListItemText>
+            </MenuItem>
+
+            <Divider />
+
+            <MenuItem onClick={() => { setUserGuideOpen(true); handleSettingsClose(); }}>
+              <ListItemIcon>
+                <HelpIcon />
+              </ListItemIcon>
+              <ListItemText>使用说明</ListItemText>
+            </MenuItem>
           </Menu>
 
           {/* 导出菜单 */}
@@ -750,6 +699,15 @@ ${previewRef?.current?.innerHTML || ''}
               },
             }}
           >
+            <MenuItem onClick={() => handleExport('multi')}>
+              <ListItemIcon>
+                <GetApp />
+              </ListItemIcon>
+              <ListItemText>多格式导出</ListItemText>
+            </MenuItem>
+
+            <Divider />
+
             <MenuItem onClick={() => handleExport('pdf')}>
               <ListItemIcon>
                 <PictureAsPdf />
@@ -784,6 +742,92 @@ ${previewRef?.current?.innerHTML || ''}
             open={imageUploadOpen}
             onClose={handleImageUploadClose}
             onImageInsert={handleImageInsert}
+          />
+
+          {/* PDF导出对话框 */}
+          {pdfExportOpen && previewRef?.current && (
+            <Dialog
+              open={pdfExportOpen}
+              onClose={() => setPdfExportOpen(false)}
+              maxWidth="sm"
+              fullWidth
+            >
+              <DialogContent sx={{ p: 0 }}>
+                <PdfExporter
+                  contentRef={previewRef}
+                  fileName="markdown-document"
+                  buttonText="导出PDF"
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setPdfExportOpen(false)}>
+                  关闭
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
+
+          {/* 文字转Markdown对话框 */}
+          <TextToMarkdownConverter
+            open={textConverterOpen}
+            onClose={() => setTextConverterOpen(false)}
+            onInsert={(markdown) => {
+              onFormatText?.('custom-text', { text: markdown });
+            }}
+          />
+
+          {/* 文章管理对话框 */}
+          <Dialog
+            open={articleManagerOpen}
+            onClose={() => setArticleManagerOpen(false)}
+            maxWidth="lg"
+            fullWidth
+            sx={{ '& .MuiDialog-paper': { height: '80vh' } }}
+          >
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LibraryIcon color="primary" />
+                  <Typography variant="h6">文章管理</Typography>
+                </Box>
+                <IconButton onClick={() => setArticleManagerOpen(false)} size="small">
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <ArticleManager
+                onArticleEdit={(articleId) => {
+                  onArticleEdit?.(articleId);
+                  setArticleManagerOpen(false);
+                }}
+                onArticleCreate={() => {
+                  onArticleCreate?.();
+                  setArticleManagerOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* 多格式导出对话框 */}
+          <MultiFormatExporter
+            open={multiFormatExportOpen}
+            onClose={() => setMultiFormatExportOpen(false)}
+            content={content}
+            previewRef={previewRef}
+          />
+
+          {/* 封面图生成器对话框 */}
+          <CoverImageGenerator
+            open={coverGeneratorOpen}
+            onClose={() => setCoverGeneratorOpen(false)}
+            content={content}
+          />
+
+          {/* 使用说明对话框 */}
+          <UserGuide
+            open={userGuideOpen}
+            onClose={() => setUserGuideOpen(false)}
           />
         </Box>
       </Container>

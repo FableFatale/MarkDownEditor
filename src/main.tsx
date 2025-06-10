@@ -28,6 +28,16 @@ import TestPage from './TestPage'
 import App from './App'
 // 导入Mermaid测试组件
 import MermaidTest from './MermaidTest'
+// 导入ReactFlow测试组件
+import ReactFlowTest from './components/ReactFlowTest'
+// 导入Mermaid解析器测试组件
+import MermaidParserTest from './components/MermaidParserTest'
+// 导入简单Mermaid测试组件
+import SimpleMermaidTest from './components/SimpleMermaidTest'
+// 导入主题测试组件
+import ThemeTest from './components/ThemeTest'
+// 导入编辑器主题测试组件
+import EditorThemeTest from './components/EditorThemeTest'
 
 // 导入主样式文件
 import './styles/main.css'
@@ -61,6 +71,11 @@ const showSimpleTailwindDemo = urlParams.has('simple-tailwind-demo');
 const showSingleRow = urlParams.has('single-row');
 const showTestPage = urlParams.has('test-page');
 const showMermaidTest = urlParams.has('mermaid-test');
+const showReactFlowTest = urlParams.has('reactflow-test');
+const showMermaidParserTest = urlParams.has('parser-test');
+const showSimpleMermaidTest = urlParams.has('simple-mermaid-test');
+const showThemeTest = urlParams.has('theme-test');
+const showEditorThemeTest = urlParams.has('editor-theme-test');
 
 // 默认显示主应用程序
 let componentToRender = <App />;
@@ -108,6 +123,16 @@ if (showTest) {
   componentToRender = <TestPage />;
 } else if (showMermaidTest) {
   componentToRender = <MermaidTest />;
+} else if (showReactFlowTest) {
+  componentToRender = <ReactFlowTest />;
+} else if (showMermaidParserTest) {
+  componentToRender = <MermaidParserTest />;
+} else if (showSimpleMermaidTest) {
+  componentToRender = <SimpleMermaidTest />;
+} else if (showThemeTest) {
+  componentToRender = <ThemeTest />;
+} else if (showEditorThemeTest) {
+  componentToRender = <EditorThemeTest />;
 } else if (showArticleManager) {
   componentToRender = <ArticleManagementDemo />;
 }
@@ -125,6 +150,11 @@ if (showTest) {
       showSingleRow ? 'SingleRowEditorDemo' :
       showTestPage ? 'TestPage' :
       showMermaidTest ? 'MermaidTest' :
+      showReactFlowTest ? 'ReactFlowTest' :
+      showMermaidParserTest ? 'MermaidParserTest' :
+      showSimpleMermaidTest ? 'SimpleMermaidTest' :
+      showThemeTest ? 'ThemeTest' :
+      showEditorThemeTest ? 'EditorThemeTest' :
       showModern ? 'ModernMarkdownEditor' :
       'App (默认主程序)'
     );

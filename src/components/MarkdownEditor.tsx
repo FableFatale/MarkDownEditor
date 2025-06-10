@@ -60,7 +60,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: theme.palette.background.default,
+          backgroundColor: theme.palette.mode === 'dark' ? '#1A1B1E' : '#FFFFFF',
           transition: theme.transitions.create(['background-color']),
         }}
       >

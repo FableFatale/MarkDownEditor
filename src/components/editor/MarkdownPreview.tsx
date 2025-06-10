@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -29,8 +29,8 @@ export const MarkdownPreview = ({
   // 使用外部传入的headingStyle或内部状态
   const effectiveHeadingStyle = showStyleControls ? internalHeadingStyle : headingStyle;
 
-  // 自定义组件
-  const components = {
+  // 使用 useMemo 缓存自定义组件，避免每次渲染时重新创建
+  const components = useMemo(() => ({
     ...createCustomHeadingRenderer(effectiveHeadingStyle),
     a: ({ node, ...props }: any) => (
       <a
@@ -41,8 +41,6 @@ export const MarkdownPreview = ({
       />
     ),
     pre: ({ node, children, ...props }: any) => {
-      console.log('🔍 Pre block detected, children:', children);
-
       // 检查是否包含代码块
       const codeElement = React.Children.toArray(children).find(
         (child: any) => child?.props?.className?.includes('language-')
@@ -68,42 +66,25 @@ export const MarkdownPreview = ({
         // 清理代码内容
         codeContent = codeContent.trim();
 
-        console.log('📝 Pre block detected:', {
-          language,
-          className,
-          codeLength: codeContent.length,
-          codePreview: codeContent.substring(0, 100) + '...',
-          isMermaid: isMermaidCode(language)
-        });
-
-        // 检查是否为Mermaid图表
-        console.log('🔍 Checking code block - Language:', language, 'Content length:', codeContent?.length);
-        console.log('🔍 Raw language from className:', className);
-        console.log('🔍 isMermaidCode result:', isMermaidCode(language));
-
         if (isMermaidCode(language)) {
-          console.log('🎯 Rendering Mermaid diagram from pre block!');
-          console.log('📊 Full chart content:', codeContent);
-
           // 验证内容不为空
           if (codeContent) {
-            // 使用安全的hash生成方法来确保组件稳定性
-            const chartKey = `mermaid-${codeContent.length}-${codeContent.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '')}`;
-            console.log('🔑 Using chart key:', chartKey);
-            console.log('🚀 About to render MermaidDiagram component');
+            // 使用内容长度和前几个字符作为稳定的key，避免重复渲染
+            const safeContent = codeContent.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+            const chartKey = `mermaid-${codeContent.length}-${safeContent}`;
             return <MermaidDiagram key={chartKey} chart={codeContent} />;
-          } else {
-            console.error('❌ Empty Mermaid content detected');
           }
-        } else {
-          console.log('❌ Not a Mermaid code block, language:', language);
         }
       }
 
       // 普通代码块
       return (
         <pre
-          className="bg-gray-100 dark:bg-gray-800 rounded p-4 my-4 overflow-auto"
+          className={`rounded p-4 my-4 overflow-auto ${
+            theme.palette.mode === 'dark'
+              ? 'bg-gray-800 text-gray-100'
+              : 'bg-gray-100 text-gray-900'
+          }`}
           {...props}
         >
           {children}
@@ -111,16 +92,24 @@ export const MarkdownPreview = ({
       );
     },
     code: ({ node, inline, className, children, ...props }: any) => {
-      console.log('🔍 Code block detected:', { inline, className, children: typeof children === 'string' ? children.substring(0, 50) + '...' : children });
-
       // 只处理内联代码，代码块由pre处理
       if (inline) {
-        return <code className="bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5" {...props}>{children}</code>;
+        return (
+          <code
+            className={`rounded px-1 py-0.5 ${
+              theme.palette.mode === 'dark'
+                ? 'bg-gray-800 text-gray-100'
+                : 'bg-gray-100 text-gray-900'
+            }`}
+            {...props}
+          >
+            {children}
+          </code>
+        );
       }
 
       // 检查是否为Mermaid代码块
       if (className && className.includes('language-mermaid')) {
-        console.log('🚫 Mermaid code block detected in code component - should be handled by pre component');
         // 不处理Mermaid代码块，让pre组件处理
         return null;
       }
@@ -134,7 +123,6 @@ export const MarkdownPreview = ({
         const mermaidData = props['data-mermaid'];
         if (mermaidData) {
           const chart = decodeURIComponent(mermaidData);
-          console.log('Rendering Mermaid from div container:', chart);
           return <MermaidDiagram chart={chart} />;
         }
       }
@@ -144,24 +132,43 @@ export const MarkdownPreview = ({
 
     blockquote: ({ node, ...props }: any) => (
       <blockquote
-        className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-4 italic"
+        className={`border-l-4 pl-4 my-4 italic ${
+          theme.palette.mode === 'dark'
+            ? 'border-gray-600 text-gray-300'
+            : 'border-gray-300 text-gray-700'
+        }`}
         {...props}
       />
     ),
     table: ({ node, ...props }: any) => (
       <div className="overflow-x-auto my-4">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700" {...props} />
+        <table
+          className={`min-w-full divide-y ${
+            theme.palette.mode === 'dark'
+              ? 'divide-gray-700'
+              : 'divide-gray-200'
+          }`}
+          {...props}
+        />
       </div>
     ),
     th: ({ node, ...props }: any) => (
       <th
-        className="px-3 py-2 bg-gray-100 dark:bg-gray-800 text-left text-sm font-semibold"
+        className={`px-3 py-2 text-left text-sm font-semibold ${
+          theme.palette.mode === 'dark'
+            ? 'bg-gray-800 text-gray-100'
+            : 'bg-gray-100 text-gray-900'
+        }`}
         {...props}
       />
     ),
     td: ({ node, ...props }: any) => (
       <td
-        className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-sm"
+        className={`px-3 py-2 border-t text-sm ${
+          theme.palette.mode === 'dark'
+            ? 'border-gray-700 text-gray-200'
+            : 'border-gray-200 text-gray-800'
+        }`}
         {...props}
       />
     ),
@@ -172,11 +179,13 @@ export const MarkdownPreview = ({
         {...props}
       />
     ),
-  };
+  }), [theme.palette.mode, effectiveHeadingStyle]);
 
   return (
     <div
-      className={`prose prose-sm md:prose-base lg:prose-lg ${theme.palette.mode === 'dark' ? 'prose-invert' : ''} max-w-none ${className}`}
+      className={`prose prose-sm md:prose-base lg:prose-lg ${
+        theme.palette.mode === 'dark' ? 'prose-invert dark' : ''
+      } max-w-none ${className}`}
       style={{
         color: theme.palette.text.primary,
         backgroundColor: 'transparent'
