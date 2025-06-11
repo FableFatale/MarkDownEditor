@@ -1,5 +1,15 @@
-# MarkDownEditor
-一个现代化的Markdown编辑器
+# 📝 现代化 Markdown 编辑器 (TailwindCSS 版本)
+
+一个功能完整的现代化 Markdown 编辑器，使用 TailwindCSS 构建，支持实时预览、多格式导出、文章管理等功能。
+
+## 🎨 UI 框架统一
+
+**已完成 UI 框架统一为 TailwindCSS**：
+- ✅ 移除 Material-UI 依赖
+- ✅ 统一使用 TailwindCSS 样式系统
+- ✅ 集成 framer-motion 动画效果
+- ✅ 使用 Heroicons 图标库
+- ✅ 完整的深色/浅色主题支持
 
 ## 已实现功能
 - ✅ Markdown语法高亮

@@ -1,4 +1,4 @@
-import { Image, ImageUploadResponse } from '../types/image';
+import type { Image, ImageUploadResponse, ImageCompressOptions } from '../types/image';
 
 import { backupService } from './backupService';
 
@@ -133,58 +133,64 @@ class ImageService {
     try {
       // 压缩图片
       const compressedBlob = await this.compressImage(file, compressOptions);
-      
+
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-        try {
-          const img = new Image();
-          img.src = e.target?.result as string;
-          
-          const newImage: Image = {
-            id: Math.random().toString(36).substr(2, 9),
-            url: e.target?.result as string,
-            name: file.name,
-            uploadTime: new Date(),
-            size: compressedBlob.size,
-            originalSize: file.size,
-            width: img.width,
-            height: img.height,
-            format: compressedBlob.type.split('/')[1]
-          };
+          try {
+            const img = new Image();
+            img.src = e.target?.result as string;
 
-          const images = this.getAllImages();
-          // 限制存储图片数量，保留最新的100张
-          if (images.length >= 100) {
-            images.shift(); // 删除最旧的图片
+            const newImage: Image = {
+              id: Math.random().toString(36).substr(2, 9),
+              url: e.target?.result as string,
+              name: file.name,
+              uploadTime: new Date(),
+              size: compressedBlob.size,
+              originalSize: file.size,
+              width: img.width,
+              height: img.height,
+              format: compressedBlob.type.split('/')[1]
+            };
+
+            const images = this.getAllImages();
+            // 限制存储图片数量，保留最新的100张
+            if (images.length >= 100) {
+              images.shift(); // 删除最旧的图片
+            }
+            images.push(newImage);
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(images));
+
+            // 创建新的备份
+            backupService.createBackup();
+
+            resolve({
+              success: true,
+              imageUrl: newImage.url
+            });
+          } catch (error) {
+            resolve({
+              success: false,
+              error: '图片保存失败'
+            });
           }
-          images.push(newImage);
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(images));
-          
-          // 创建新的备份
-          backupService.createBackup();
+        };
 
-          resolve({
-            success: true,
-            imageUrl: newImage.url
-          });
-        } catch (error) {
+        reader.onerror = () => {
           resolve({
             success: false,
-            error: '图片保存失败'
+            error: '图片读取失败'
           });
-        }
-      };
+        };
 
-      reader.onerror = () => {
-        resolve({
-          success: false,
-          error: '图片读取失败'
-        });
+        reader.readAsDataURL(file);
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: '图片处理失败'
       };
-
-      reader.readAsDataURL(file);
-    });
+    }
   }
 
   // 删除图片

@@ -1,0 +1,182 @@
+/* 统一颜色主题配置 */
+
+/* 全局颜色变量 - 确保所有组件使用一致的颜色 */
+:root {
+  /* 主色调 - GitHub 蓝色系 */
+  --color-primary-50: #eff8ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #0969da;
+  --color-primary-600: #0550ae;
+  --color-primary-700: #0a3069;
+  --color-primary-800: #0e1116;
+  --color-primary-900: #010409;
+
+  /* 辅助色调 - 中性灰色系 */
+  --color-secondary-50: #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+
+  /* 语义化颜色 */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* 浅色主题背景 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f8fa;
+  --bg-tertiary: #f1f5f9;
+  
+  /* 浅色主题文本 */
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-tertiary: rgba(0, 0, 0, 0.38);
+  
+  /* 浅色主题边框 */
+  --border-primary: rgba(0, 0, 0, 0.12);
+  --border-secondary: rgba(0, 0, 0, 0.06);
+  
+  /* 浅色主题阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* 深色主题 */
+[data-theme='dark'] {
+  /* 深色主题背景 */
+  --bg-primary: #1a1b1e;
+  --bg-secondary: #27282b;
+  --bg-tertiary: #2d2e32;
+  
+  /* 深色主题文本 */
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.38);
+  
+  /* 深色主题边框 */
+  --border-primary: rgba(255, 255, 255, 0.12);
+  --border-secondary: rgba(255, 255, 255, 0.06);
+  
+  /* 深色主题阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* 工具栏专用颜色 */
+.toolbar {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid var(--border-secondary);
+  backdrop-filter: blur(12px) saturate(150%);
+}
+
+[data-theme='dark'] .toolbar {
+  background-color: rgba(39, 40, 43, 0.9);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+/* 按钮颜色统一 */
+.btn-primary {
+  background-color: var(--color-primary-500);
+  color: white;
+  border: 1px solid var(--color-primary-500);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+}
+
+[data-theme='dark'] .btn-secondary:hover {
+  background-color: var(--color-primary-900);
+  border-color: var(--color-primary-700);
+}
+
+/* 输入框颜色统一 */
+.input-field {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.input-field:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.1);
+}
+
+/* 卡片颜色统一 */
+.card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 链接颜色统一 */
+.link {
+  color: var(--color-primary-600);
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--color-primary-700);
+  text-decoration: underline;
+}
+
+[data-theme='dark'] .link {
+  color: var(--color-primary-400);
+}
+
+[data-theme='dark'] .link:hover {
+  color: var(--color-primary-300);
+}
+
+/* 过渡动画 */
+* {
+  transition: background-color 0.2s ease-in-out,
+              border-color 0.2s ease-in-out,
+              color 0.2s ease-in-out,
+              box-shadow 0.2s ease-in-out,
+              transform 0.15s ease-in-out;
+}
+
+/* 确保所有组件都应用统一的颜色方案 */
+.unified-theme {
+  --primary: var(--color-primary-500);
+  --primary-light: var(--color-primary-400);
+  --primary-dark: var(--color-primary-600);
+  --secondary: var(--color-secondary-500);
+  --background: var(--bg-primary);
+  --surface: var(--bg-secondary);
+  --text: var(--text-primary);
+  --text-secondary: var(--text-secondary);
+  --border: var(--border-primary);
+}

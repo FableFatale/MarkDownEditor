@@ -26,6 +26,10 @@ import SingleRowEditorDemo from './SingleRowEditorDemo'
 import TestPage from './TestPage'
 // 导入主应用组件
 import App from './App'
+// 导入TailwindCSS版本的主应用组件
+import TailwindApp from './TailwindApp'
+// 导入TailwindCSS测试版本
+import TailwindTestApp from './TailwindTestApp'
 // 导入Mermaid测试组件
 import MermaidTest from './MermaidTest'
 // 导入ReactFlow测试组件
@@ -76,9 +80,10 @@ const showMermaidParserTest = urlParams.has('parser-test');
 const showSimpleMermaidTest = urlParams.has('simple-mermaid-test');
 const showThemeTest = urlParams.has('theme-test');
 const showEditorThemeTest = urlParams.has('editor-theme-test');
+const showTailwindTest = urlParams.has('tailwind-test');
 
-// 默认显示主应用程序
-let componentToRender = <App />;
+// 默认显示TailwindCSS版本的主应用程序
+let componentToRender = <TailwindApp />;
 
 // 根据URL参数决定显示哪个组件
 if (showTest) {
@@ -133,6 +138,8 @@ if (showTest) {
   componentToRender = <ThemeTest />;
 } else if (showEditorThemeTest) {
   componentToRender = <EditorThemeTest />;
+} else if (showTailwindTest) {
+  componentToRender = <TailwindTestApp />;
 } else if (showArticleManager) {
   componentToRender = <ArticleManagementDemo />;
 }

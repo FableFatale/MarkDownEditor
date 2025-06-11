@@ -6,40 +6,71 @@
 @layer components {
   .toolbar {
     @apply sticky top-0 z-10 flex justify-between items-center
-           bg-white/90 dark:bg-gray-800/90
-           backdrop-blur-lg backdrop-saturate-150
-           border-b border-gray-200/50 dark:border-gray-700/50
            px-3 py-2
            shadow-sm
            transition-all duration-300 ease-in-out
            animate-slide-in;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid var(--border-secondary);
+    backdrop-filter: blur(12px) saturate(150%);
+  }
+
+  [data-theme='dark'] .toolbar {
+    background-color: rgba(39, 40, 43, 0.9);
+    border-bottom: 1px solid var(--border-primary);
   }
 
 .toolbar:hover {
   @apply shadow-md;
   background-color: rgba(255, 255, 255, 0.95);
-  @apply dark:bg-gray-800;
-  @apply backdrop-blur-xl;
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+[data-theme='dark'] .toolbar:hover {
+  background-color: rgba(39, 40, 43, 0.95);
 }
 
 .toolbar-button {
   @apply p-1.5 rounded-md;
-  @apply text-gray-600 dark:text-gray-300;
-  @apply hover:bg-gray-100/80 dark:hover:bg-gray-600/80;
-  @apply active:bg-gray-200/80 dark:active:bg-gray-500/80;
   @apply transition-all duration-150;
   @apply hover:scale-105 active:scale-95;
-  @apply focus:outline-none focus:ring-1 focus:ring-primary-500/40;
+  @apply focus:outline-none;
   @apply hover:shadow-sm active:shadow-none;
   @apply mx-0.5;
+  color: var(--text-secondary);
+  background-color: transparent;
+}
+
+.toolbar-button:hover {
+  color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
+}
+
+.toolbar-button:active {
+  background-color: var(--color-primary-100);
+}
+
+.toolbar-button:focus {
+  box-shadow: 0 0 0 2px var(--color-primary-500);
+  opacity: 0.4;
+}
+
+[data-theme='dark'] .toolbar-button {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .toolbar-button:hover {
+  color: var(--color-primary-400);
+  background-color: var(--color-primary-900);
+}
+
+[data-theme='dark'] .toolbar-button:active {
+  background-color: var(--color-primary-800);
 }
 
 .toolbar-button svg {
   @apply w-[18px] h-[18px] transition-transform duration-200;
-}
-
-.toolbar-button:hover svg {
-  @apply text-primary-600 dark:text-primary-400;
+  color: inherit;
 }
 
 .toolbar-divider {

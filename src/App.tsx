@@ -38,7 +38,6 @@ const App: React.FC = () => {
 - **多格式导出** - PDF、HTML、图片等格式
 - **文章管理** - 分类、搜索、版本控制
 - **大纲模式** - 基于标题的导航目录
-- **文字转换** - HTML/纯文本转Markdown
 - **封面生成** - 2.35:1比例封面图
 
 ## 快捷键
@@ -46,7 +45,7 @@ const App: React.FC = () => {
 - **Ctrl+I** - 斜体
 - **Ctrl+S** - 手动保存
 
-> 💡 更多功能请查看工具栏右侧的设置菜单 → 使用说明
+> 💡 更多功能请查看工具栏的各个按钮和设置菜单 → 使用说明
 
 开始编写您的内容...`);
 
@@ -170,6 +169,9 @@ const App: React.FC = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // 添加统一主题类
+    document.documentElement.classList.add('unified-theme');
   }, [themeMode]);
 
   // 设置处理函数
@@ -335,14 +337,7 @@ const App: React.FC = () => {
         formatText = '1. 列表项1\n2. 列表项2\n3. 列表项3';
         needsNewLine = true;
         break;
-      case 'custom-text':
-        if (options?.text) {
-          formatText = options.text;
-          needsNewLine = true;
-        } else {
-          return;
-        }
-        break;
+
       default:
         return;
     }
@@ -363,9 +358,9 @@ const App: React.FC = () => {
         palette: {
           mode: themeMode,
           primary: {
-            main: '#5E6AD2',
-            light: '#8B8FE5',
-            dark: '#4A4FB8',
+            main: '#0969DA',
+            light: '#60A5FA',
+            dark: '#0550AE',
           },
           background: {
             default: themeMode === 'light' ? '#FFFFFF' : '#1A1B1E',

@@ -1,5 +1,9 @@
 /* 主样式文件，整合所有样式 */
 
+/* 导入统一颜色主题 - 必须在最前面 */
+@import '../theme/unified-colors.css';
+@import '../theme/theme.css';
+
 /* 导入其他样式文件 - 必须在所有其他语句之前 */
 @import './toolbar.css';
 @import './editor-toolbar.css';

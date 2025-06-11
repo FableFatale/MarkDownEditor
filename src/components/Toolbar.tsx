@@ -42,7 +42,6 @@ import {
   PhotoCamera,
   History,
   FormatListBulleted as OutlineIcon,
-  Transform as ConvertIcon,
   Folder as ArticleIcon,
   LibraryBooks as LibraryIcon,
   Close as CloseIcon,
@@ -54,7 +53,6 @@ import PdfExporter from './PdfExporter';
 import { ImageUploadDialog } from './ImageUploadDialog';
 import SaveStatusIndicator from './SaveStatusIndicator';
 import OutlineNavigator from './OutlineNavigator';
-import TextToMarkdownConverter from './TextToMarkdownConverter';
 import { ArticleManager } from './ArticleManager';
 import MultiFormatExporter from './MultiFormatExporter';
 import CoverImageGenerator from './CoverImageGenerator';
@@ -105,7 +103,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
   const [imageUploadOpen, setImageUploadOpen] = useState(false);
   const [pdfExportOpen, setPdfExportOpen] = useState(false);
-  const [textConverterOpen, setTextConverterOpen] = useState(false);
   const [articleManagerOpen, setArticleManagerOpen] = useState(false);
   const [multiFormatExportOpen, setMultiFormatExportOpen] = useState(false);
   const [coverGeneratorOpen, setCoverGeneratorOpen] = useState(false);
@@ -405,6 +402,122 @@ ${previewRef?.current?.innerHTML || ''}
 
           <WordCounter text={content} />
 
+          {/* 大纲模式按钮 */}
+          <Tooltip
+            title="大纲模式"
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={() => onToggleOutline?.()}
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
+                },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
+                }
+              }}
+            >
+              <OutlineIcon />
+            </IconButton>
+          </Tooltip>
+
+          {/* 文章管理按钮 */}
+          <Tooltip
+            title="文章管理"
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={() => setArticleManagerOpen(true)}
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
+                },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
+                }
+              }}
+            >
+              <LibraryIcon />
+            </IconButton>
+          </Tooltip>
+
           {/* 版本历史按钮 */}
           {onVersionHistory && (
             <Tooltip
@@ -464,6 +577,64 @@ ${previewRef?.current?.innerHTML || ''}
               </IconButton>
             </Tooltip>
           )}
+
+          {/* 主题切换按钮 */}
+          <Tooltip
+            title={themeMode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            placement="bottom"
+            arrow
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: alpha(theme.palette.grey[900], 0.9),
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  borderRadius: 1,
+                  backdropFilter: 'blur(10px)',
+                }
+              }
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={onToggleTheme}
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                transition: theme.transitions.create([
+                  'background-color',
+                  'transform',
+                  'box-shadow',
+                  'color'
+                ], {
+                  duration: 200,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                }),
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                  transform: 'translateY(-1px) scale(1.05)',
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  color: theme.palette.primary.main,
+                  '& svg': {
+                    transform: 'scale(1.1)',
+                  }
+                },
+                '&:active': {
+                  transform: 'translateY(0) scale(0.98)',
+                  boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.2)}`,
+                },
+                '& svg': {
+                  fontSize: '1.1rem',
+                  transition: theme.transitions.create(['transform', 'color'], {
+                    duration: 200
+                  })
+                }
+              }}
+            >
+              {themeMode === 'dark' ? <LightMode /> : <DarkMode />}
+            </IconButton>
+          </Tooltip>
 
           {/* 导出按钮 */}
           <Tooltip
@@ -604,15 +775,6 @@ ${previewRef?.current?.innerHTML || ''}
               },
             }}
           >
-            <MenuItem onClick={handleThemeToggle}>
-              <ListItemIcon>
-                {themeMode === 'dark' ? <LightMode /> : <DarkMode />}
-              </ListItemIcon>
-              <ListItemText>
-                {themeMode === 'dark' ? '浅色模式' : '深色模式'}
-              </ListItemText>
-            </MenuItem>
-
             <MenuItem onClick={handleFullScreenToggle}>
               <ListItemIcon>
                 {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
@@ -639,27 +801,6 @@ ${previewRef?.current?.innerHTML || ''}
             </MenuItem>
 
             <Divider />
-
-            <MenuItem onClick={() => { onToggleOutline?.(); handleSettingsClose(); }}>
-              <ListItemIcon>
-                <OutlineIcon />
-              </ListItemIcon>
-              <ListItemText>大纲模式</ListItemText>
-            </MenuItem>
-
-            <MenuItem onClick={() => { setTextConverterOpen(true); handleSettingsClose(); }}>
-              <ListItemIcon>
-                <ConvertIcon />
-              </ListItemIcon>
-              <ListItemText>文字转换</ListItemText>
-            </MenuItem>
-
-            <MenuItem onClick={() => { setArticleManagerOpen(true); handleSettingsClose(); }}>
-              <ListItemIcon>
-                <LibraryIcon />
-              </ListItemIcon>
-              <ListItemText>文章管理</ListItemText>
-            </MenuItem>
 
             <MenuItem onClick={() => { setCoverGeneratorOpen(true); handleSettingsClose(); }}>
               <ListItemIcon>
@@ -767,14 +908,7 @@ ${previewRef?.current?.innerHTML || ''}
             </Dialog>
           )}
 
-          {/* 文字转Markdown对话框 */}
-          <TextToMarkdownConverter
-            open={textConverterOpen}
-            onClose={() => setTextConverterOpen(false)}
-            onInsert={(markdown) => {
-              onFormatText?.('custom-text', { text: markdown });
-            }}
-          />
+
 
           {/* 文章管理对话框 */}
           <Dialog

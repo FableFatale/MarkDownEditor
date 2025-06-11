@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="unified-theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>颜色协调性测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 导入统一颜色主题 */
+        :root {
+            /* 主色调 - 紫蓝色系 */
+            --color-primary-50: #f0f1ff;
+            --color-primary-100: #e1e4ff;
+            --color-primary-200: #c9ceff;
+            --color-primary-300: #a8afff;
+            --color-primary-400: #8b8fe5;
+            --color-primary-500: #5e6ad2;
+            --color-primary-600: #4a4fb8;
+            --color-primary-700: #3d429e;
+            --color-primary-800: #323680;
+            --color-primary-900: #2b2f66;
+
+            /* 背景色 */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f8fa;
+            --bg-tertiary: #f1f5f9;
+            
+            /* 文本色 */
+            --text-primary: rgba(0, 0, 0, 0.87);
+            --text-secondary: rgba(0, 0, 0, 0.6);
+            
+            /* 边框色 */
+            --border-primary: rgba(0, 0, 0, 0.12);
+            --border-secondary: rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme='dark'] {
+            /* 深色主题背景 */
+            --bg-primary: #1a1b1e;
+            --bg-secondary: #27282b;
+            --bg-tertiary: #2d2e32;
+            
+            /* 深色主题文本 */
+            --text-primary: rgba(255, 255, 255, 0.87);
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            
+            /* 深色主题边框 */
+            --border-primary: rgba(255, 255, 255, 0.12);
+            --border-secondary: rgba(255, 255, 255, 0.06);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .toolbar {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid var(--border-secondary);
+            backdrop-filter: blur(12px) saturate(150%);
+        }
+
+        [data-theme='dark'] .toolbar {
+            background-color: rgba(39, 40, 43, 0.9);
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary-500);
+            color: white;
+            border: 1px solid var(--color-primary-500);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-600);
+            border-color: var(--color-primary-600);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--color-primary-50);
+            border-color: var(--color-primary-200);
+        }
+
+        [data-theme='dark'] .btn-secondary:hover {
+            background-color: var(--color-primary-900);
+            border-color: var(--color-primary-700);
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            border: 1px solid var(--border-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-8">
+        <!-- 标题和主题切换 -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold" style="color: var(--color-primary-600);">
+                颜色协调性测试
+            </h1>
+            <button id="themeToggle" class="btn-primary px-4 py-2 rounded-md">
+                切换主题
+            </button>
+        </div>
+
+        <!-- 工具栏测试 -->
+        <div class="toolbar p-4 rounded-lg mb-8">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-lg font-semibold">工具栏样式测试</h2>
+                <button class="btn-secondary px-3 py-1 rounded text-sm">按钮1</button>
+                <button class="btn-secondary px-3 py-1 rounded text-sm">按钮2</button>
+                <button class="btn-primary px-3 py-1 rounded text-sm">主要按钮</button>
+            </div>
+        </div>
+
+        <!-- 主色调展示 -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">主色调 (Primary Colors)</h2>
+            <div class="grid grid-cols-5 gap-4">
+                <div class="text-center">
+                    <div class="color-swatch mx-auto mb-2" style="background-color: var(--color-primary-100);"></div>
+                    <p class="text-sm">Primary 100</p>
+                </div>
+                <div class="text-center">
+                    <div class="color-swatch mx-auto mb-2" style="background-color: var(--color-primary-300);"></div>
+                    <p class="text-sm">Primary 300</p>
+                </div>
+                <div class="text-center">
+                    <div class="color-swatch mx-auto mb-2" style="background-color: var(--color-primary-500);"></div>
+                    <p class="text-sm">Primary 500</p>
+                </div>
+                <div class="text-center">
+                    <div class="color-swatch mx-auto mb-2" style="background-color: var(--color-primary-700);"></div>
+                    <p class="text-sm">Primary 700</p>
+                </div>
+                <div class="text-center">
+                    <div class="color-swatch mx-auto mb-2" style="background-color: var(--color-primary-900);"></div>
+                    <p class="text-sm">Primary 900</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 卡片测试 -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">卡片样式测试</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="card p-6 rounded-lg">
+                    <h3 class="font-semibold mb-2">测试卡片 1</h3>
+                    <p style="color: var(--text-secondary);">这是一个测试卡片，用于验证颜色协调性。</p>
+                    <button class="btn-primary px-4 py-2 rounded mt-4">了解更多</button>
+                </div>
+                <div class="card p-6 rounded-lg">
+                    <h3 class="font-semibold mb-2">测试卡片 2</h3>
+                    <p style="color: var(--text-secondary);">这是另一个测试卡片，确保样式一致。</p>
+                    <button class="btn-secondary px-4 py-2 rounded mt-4">查看详情</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按钮测试 -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">按钮样式测试</h2>
+            <div class="flex space-x-4">
+                <button class="btn-primary px-6 py-3 rounded-md">主要按钮</button>
+                <button class="btn-secondary px-6 py-3 rounded-md">次要按钮</button>
+                <button class="btn-primary px-6 py-3 rounded-md" disabled style="opacity: 0.5;">禁用按钮</button>
+            </div>
+        </div>
+
+        <!-- 颜色说明 */
+        <div class="card p-6 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4">颜色方案说明</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium mb-2">主色调</h3>
+                    <p style="color: var(--text-secondary);">
+                        使用紫蓝色系 (#5e6ad2) 作为主色调，提供现代感和专业感。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-medium mb-2">协调性</h3>
+                    <p style="color: var(--text-secondary);">
+                        所有颜色都基于统一的色彩系统，确保视觉协调性。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 主题切换功能
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        let isDark = false;
+        
+        themeToggle.addEventListener('click', () => {
+            isDark = !isDark;
+            html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            themeToggle.textContent = isDark ? '切换到浅色' : '切换到深色';
+        });
+    </script>
+</body>
+</html>

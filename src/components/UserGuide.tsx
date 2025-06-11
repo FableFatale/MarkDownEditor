@@ -102,9 +102,8 @@ export const UserGuide: React.FC<UserGuideProps> = ({
       category: '导出功能',
       items: [
         { name: 'PDF导出优化', desc: '完整的PDF导出设置和样式控制' },
-        { name: '多格式导出', desc: 'PDF/HTML/Markdown/文本/图片' },
-        { name: '封面图生成', desc: '2.35:1比例封面图生成器' },
-        { name: '文字转换', desc: 'HTML/纯文本转Markdown' }
+        { name: '多格式导出', desc: 'PDF/HTML/Markdown/文本/图片等格式' },
+        { name: '封面图生成', desc: '2.35:1比例封面图生成器' }
       ]
     }
   ];

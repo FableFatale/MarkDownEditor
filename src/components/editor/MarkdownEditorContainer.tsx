@@ -10,6 +10,18 @@ import { MarkdownEditor } from '../MarkdownEditor';
 import debounce from 'lodash.debounce';
 import 'react-resizable/css/styles.css';
 import FormatColorTextIcon from '@mui/icons-material/FormatColorText';
+import { motion } from 'framer-motion';
+import { createCustomHeadingRenderer } from '../CustomHeadingStyles';
+
+interface EditorSettings {
+  fontSize: number;
+  lineHeight: number;
+  autoSave: boolean;
+  showLineNumbers: boolean;
+  wordWrap: boolean;
+  editorWidth: number;
+  headingStyle: 'default' | 'underline' | 'bordered' | 'gradient' | 'modern' | 'elegant';
+}
 
 interface MarkdownEditorContainerProps {
   initialValue?: string;
@@ -18,6 +30,7 @@ interface MarkdownEditorContainerProps {
   largeFileThreshold?: number; // Size threshold in characters to use large file editor
   previewRef?: React.RefObject<HTMLDivElement>;
   onFormatText?: (format: string) => void;
+  editorSettings?: EditorSettings;
 }
 
 export const MarkdownEditorContainer = ({
@@ -26,17 +39,20 @@ export const MarkdownEditorContainer = ({
   onContentChange,
   largeFileThreshold = 100000, // Default to 100KB (approximately 100,000 characters)
   previewRef: externalPreviewRef,
-  onFormatText
+  onFormatText,
+  editorSettings
 }: MarkdownEditorContainerProps) => {
   const theme = useTheme();
   const [content, setContent] = useState(initialValue);
   const [previewContent, setPreviewContent] = useState(initialValue);
-  const [editorWidth, setEditorWidth] = useState(window.innerWidth * 0.45); // 初始编辑器宽度设为45%，给预览区域更多空间
+  const [editorWidth, setEditorWidth] = useState(
+    editorSettings?.editorWidth ? (window.innerWidth * editorSettings.editorWidth / 100) : (window.innerWidth * 0.45)
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewUpdating, setIsPreviewUpdating] = useState(false);
   // 使用主题状态而不是本地状态
   const isDarkMode = theme.palette.mode === 'dark';
-  const [headingStyle, setHeadingStyle] = useState<string>('default');
+  const [headingStyle, setHeadingStyle] = useState<string>(editorSettings?.headingStyle || 'default');
   const internalPreviewRef = useRef<HTMLDivElement>(null);
   const previewRef = externalPreviewRef || internalPreviewRef;
 

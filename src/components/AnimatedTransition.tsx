@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, useTheme } from '@mui/material';
 
 interface AnimatedTransitionProps {
   children: React.ReactNode;
@@ -15,8 +14,6 @@ export const AnimatedTransition: React.FC<AnimatedTransitionProps> = ({
   duration = 0.3,
   delay = 0,
 }) => {
-  const theme = useTheme();
-
   const animations = {
     fade: {
       initial: { opacity: 0 },
@@ -46,20 +43,11 @@ export const AnimatedTransition: React.FC<AnimatedTransitionProps> = ({
           delay,
           ease: 'easeInOut',
         }}
-        style={{
-          width: '100%',
-          height: '100%',
-        }}
+        className="w-full h-full"
       >
-        <Box
-          sx={{
-            width: '100%',
-            height: '100%',
-            transition: theme.transitions.create(['background-color', 'box-shadow']),
-          }}
-        >
+        <div className="w-full h-full transition-all duration-300">
           {children}
-        </Box>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
