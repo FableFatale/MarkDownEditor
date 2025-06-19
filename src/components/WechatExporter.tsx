@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { convertMarkdownToWechatHTML, WechatStyleOptions, defaultWechatStyles, getWechatSupportInfo } from '../services/wechatExportService';
+import {
+  convertMarkdownToWechatHTML,
+  WechatStyleOptions,
+  defaultWechatStyles,
+  getWechatSupportInfo,
+  previewFootnoteConversion,
+  validateWechatHTML
+} from '../services/wechatExportService';
 import {
   Button,
   Dialog,
@@ -61,7 +68,12 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
   
   // 自定义样式选项
   const [customStyles, setCustomStyles] = useState<WechatStyleOptions>(defaultWechatStyles);
-  
+
+  // 外链转脚注选项
+  const [convertLinksToFootnotes, setConvertLinksToFootnotes] = useState(true);
+  const [footnotePreview, setFootnotePreview] = useState<any>(null);
+  const [validationResult, setValidationResult] = useState<any>(null);
+
   // 使用useRef跟踪组件的挂载状态
   const isMountedRef = useRef(true);
   
@@ -69,6 +81,12 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
   useEffect(() => {
     // 组件挂载时，确保isMountedRef为true
     isMountedRef.current = true;
+
+    // 预览外链转脚注效果
+    if (markdown) {
+      const preview = previewFootnoteConversion(markdown);
+      setFootnotePreview(preview);
+    }
     
     // 存储所有需要在组件卸载时清理的timeout
     const timeoutIds: number[] = [];
@@ -125,9 +143,15 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
     setIsConverting(true);
     
     try {
-      // 使用服务进行转换
-      const html = convertMarkdownToWechatHTML(markdown, customStyles);
-      
+      // 使用服务进行转换，包含外链转脚注选项
+      const html = convertMarkdownToWechatHTML(markdown, customStyles, convertLinksToFootnotes);
+
+      // 验证HTML
+      const validation = validateWechatHTML(html);
+      if (isMountedRef.current) {
+        setValidationResult(validation);
+      }
+
       // 再次检查组件是否已卸载
       if (isMountedRef.current) {
         setIsConverting(false);
@@ -317,6 +341,8 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
             <Tab label="预览" />
             <Tab label="HTML源码" />
             <Tab label="样式设置" />
+            <Tab label="外链设置" />
+            <Tab label="验证结果" />
           </Tabs>
 
           <Box sx={{ mt: 2 }}>
@@ -454,6 +480,107 @@ export const WechatExporter: React.FC<WechatExporterProps> = ({
                     label="图片阴影"
                   />
                 </Box>
+              </Box>
+            )}
+
+            {activeTab === 3 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>外链转脚注设置</Typography>
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={convertLinksToFootnotes}
+                      onChange={(e) => setConvertLinksToFootnotes(e.target.checked)}
+                    />
+                  }
+                  label="将外部链接转换为脚注"
+                />
+
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1, mb: 2 }}>
+                  微信公众号不支持外部链接跳转，启用此选项将自动将外部链接转换为文末脚注。
+                </Typography>
+
+                {footnotePreview && (
+                  <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>链接统计</Typography>
+                    <Typography variant="body2">
+                      总链接数: {footnotePreview.originalLinkCount}
+                    </Typography>
+                    <Typography variant="body2">
+                      外部链接数: {footnotePreview.externalLinkCount}
+                    </Typography>
+                    {footnotePreview.hasExternalLinks && convertLinksToFootnotes && (
+                      <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                        将生成 {footnotePreview.externalLinkCount} 条脚注
+                      </Typography>
+                    )}
+
+                    {footnotePreview.footnotes.length > 0 && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle2" gutterBottom>外部链接列表</Typography>
+                        {footnotePreview.footnotes.map((url: string, index: number) => (
+                          <Typography key={index} variant="body2" sx={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                            [{index + 1}] {url}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {activeTab === 4 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>验证结果</Typography>
+
+                {validationResult ? (
+                  <Box>
+                    <Box sx={{
+                      p: 2,
+                      mb: 2,
+                      bgcolor: validationResult.isValid ? 'success.light' : 'error.light',
+                      color: validationResult.isValid ? 'success.contrastText' : 'error.contrastText',
+                      borderRadius: 1
+                    }}>
+                      <Typography variant="subtitle1">
+                        {validationResult.isValid ? '✅ 验证通过' : '❌ 发现问题'}
+                      </Typography>
+                      <Typography variant="body2">
+                        字数统计: {validationResult.wordCount} | HTML大小: {(validationResult.htmlSize / 1024).toFixed(1)} KB
+                      </Typography>
+                    </Box>
+
+                    {validationResult.issues.length > 0 && (
+                      <Box>
+                        <Typography variant="subtitle2" gutterBottom>问题列表</Typography>
+                        {validationResult.issues.map((issue: any, index: number) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              p: 2,
+                              mb: 1,
+                              bgcolor: issue.type === 'error' ? 'error.light' : 'warning.light',
+                              borderRadius: 1
+                            }}
+                          >
+                            <Typography variant="body2" fontWeight="bold">
+                              {issue.message}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                              建议: {issue.suggestion}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="textSecondary">
+                    请先生成HTML内容以查看验证结果
+                  </Typography>
+                )}
               </Box>
             )}
           </Box>

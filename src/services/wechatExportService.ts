@@ -36,9 +36,14 @@ export const defaultWechatStyles: WechatStyleOptions = {
  * 将Markdown转换为微信公众号兼容的HTML
  * @param markdown Markdown文本
  * @param styleOptions 样式选项
+ * @param convertLinksToFootnotes 是否将外链转换为脚注
  * @returns 转换后的HTML
  */
-export const convertMarkdownToWechatHTML = (markdown: string, styleOptions: WechatStyleOptions = defaultWechatStyles): string => {
+export const convertMarkdownToWechatHTML = (
+  markdown: string,
+  styleOptions: WechatStyleOptions = defaultWechatStyles,
+  convertLinksToFootnotes: boolean = true
+): string => {
   try {
     // 配置marked选项
     marked.setOptions({
@@ -46,24 +51,123 @@ export const convertMarkdownToWechatHTML = (markdown: string, styleOptions: Wech
       breaks: true, // 允许回车换行
       sanitize: false, // 不进行HTML标签过滤
     });
-    
+
+    // 处理外链转脚注
+    let processedMarkdown = markdown;
+    let footnotes: string[] = [];
+
+    if (convertLinksToFootnotes) {
+      const result = convertExternalLinksToFootnotes(markdown);
+      processedMarkdown = result.content;
+      footnotes = result.footnotes;
+    }
+
     // 转换Markdown为HTML
-    let html = marked(markdown);
-    
+    let html = marked(processedMarkdown);
+
     // 过滤不支持的HTML标签和属性
     html = filterUnsupportedHtml(html);
-    
+
     // 应用微信公众号兼容的样式
     html = applyWechatStyles(html, styleOptions);
-    
+
+    // 添加脚注
+    if (footnotes.length > 0) {
+      html = addFootnotesToHTML(html, footnotes, styleOptions);
+    }
+
     // 最终清理，确保HTML符合微信公众号要求
     html = finalCleanup(html);
-    
+
     return html;
   } catch (error) {
     console.error('转换Markdown到微信HTML失败:', error);
     throw new Error('转换失败，请检查Markdown内容');
   }
+};
+
+/**
+ * 将外部链接转换为脚注
+ * @param markdown 原始Markdown内容
+ * @returns 处理后的内容和脚注列表
+ */
+const convertExternalLinksToFootnotes = (markdown: string): { content: string; footnotes: string[] } => {
+  const footnotes: string[] = [];
+  let footnoteIndex = 1;
+
+  // 匹配Markdown链接格式 [文本](URL)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+  const processedContent = markdown.replace(linkRegex, (match, text, url) => {
+    // 判断是否为外部链接
+    if (isExternalLink(url)) {
+      footnotes.push(url);
+      return `${text}[${footnoteIndex++}]`;
+    }
+    // 内部链接保持原样
+    return match;
+  });
+
+  return {
+    content: processedContent,
+    footnotes
+  };
+};
+
+/**
+ * 判断是否为外部链接
+ * @param url 链接地址
+ * @returns 是否为外部链接
+ */
+const isExternalLink = (url: string): boolean => {
+  // 排除相对路径和锚点链接
+  if (url.startsWith('#') || url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
+    return false;
+  }
+
+  // 排除邮箱链接
+  if (url.startsWith('mailto:')) {
+    return false;
+  }
+
+  // 排除电话链接
+  if (url.startsWith('tel:')) {
+    return false;
+  }
+
+  // 检查是否为HTTP/HTTPS链接
+  return url.startsWith('http://') || url.startsWith('https://');
+};
+
+/**
+ * 将脚注添加到HTML内容中
+ * @param html 原始HTML
+ * @param footnotes 脚注列表
+ * @param styleOptions 样式选项
+ * @returns 添加脚注后的HTML
+ */
+const addFootnotesToHTML = (html: string, footnotes: string[], styleOptions: WechatStyleOptions): string => {
+  if (footnotes.length === 0) {
+    return html;
+  }
+
+  // 创建脚注HTML
+  let footnotesHTML = `
+    <div style="margin-top: 2em; padding-top: 1em; border-top: 1px solid #e0e0e0;">
+      <h4 style="font-size: ${parseInt(styleOptions.textSize) + 2}px; color: ${styleOptions.subtitleColor}; margin-bottom: 1em;">参考链接</h4>
+  `;
+
+  footnotes.forEach((url, index) => {
+    footnotesHTML += `
+      <p style="font-size: ${parseInt(styleOptions.textSize) - 1}px; color: ${styleOptions.textColor}; line-height: 1.5; margin: 0.5em 0; word-break: break-all;">
+        [${index + 1}] ${url}
+      </p>
+    `;
+  });
+
+  footnotesHTML += '</div>';
+
+  return html + footnotesHTML;
 };
 
 /**
@@ -196,6 +300,181 @@ const applyWechatStyles = (html: string, options: WechatStyleOptions): string =>
   html = html.replace(/<td>/g, `<td style="border:1px solid #ddd; padding:8px;">`);
   
   return html;
+};
+
+/**
+ * 预览外链转脚注的效果
+ * @param markdown 原始Markdown内容
+ * @returns 预览信息
+ */
+export const previewFootnoteConversion = (markdown: string) => {
+  const result = convertExternalLinksToFootnotes(markdown);
+
+  return {
+    originalLinkCount: (markdown.match(/\[([^\]]+)\]\(([^)]+)\)/g) || []).length,
+    externalLinkCount: result.footnotes.length,
+    processedContent: result.content,
+    footnotes: result.footnotes,
+    hasExternalLinks: result.footnotes.length > 0
+  };
+};
+
+/**
+ * 批量处理多个Markdown文件的外链转脚注
+ * @param markdownFiles Markdown文件内容数组
+ * @param styleOptions 样式选项
+ * @returns 处理结果数组
+ */
+export const batchConvertToWechatHTML = (
+  markdownFiles: string[],
+  styleOptions: WechatStyleOptions = defaultWechatStyles
+): Array<{ html: string; footnoteCount: number; success: boolean; error?: string }> => {
+  return markdownFiles.map((markdown, index) => {
+    try {
+      const html = convertMarkdownToWechatHTML(markdown, styleOptions, true);
+      const preview = previewFootnoteConversion(markdown);
+
+      return {
+        html,
+        footnoteCount: preview.externalLinkCount,
+        success: true
+      };
+    } catch (error) {
+      return {
+        html: '',
+        footnoteCount: 0,
+        success: false,
+        error: error instanceof Error ? error.message : '未知错误'
+      };
+    }
+  });
+};
+
+/**
+ * 生成微信公众号样式预设
+ * @returns 样式预设数组
+ */
+export const getWechatStylePresets = (): Array<{ name: string; description: string; styles: WechatStyleOptions }> => {
+  return [
+    {
+      name: '经典黑白',
+      description: '简洁的黑白配色，适合正式文章',
+      styles: {
+        ...defaultWechatStyles,
+        titleColor: '#2c3e50',
+        subtitleColor: '#34495e',
+        textColor: '#2c3e50',
+        linkColor: '#3498db'
+      }
+    },
+    {
+      name: '温暖橙色',
+      description: '温暖的橙色调，适合生活类文章',
+      styles: {
+        ...defaultWechatStyles,
+        titleColor: '#e67e22',
+        subtitleColor: '#d35400',
+        textColor: '#2c3e50',
+        linkColor: '#e74c3c'
+      }
+    },
+    {
+      name: '清新绿色',
+      description: '清新的绿色调，适合科技类文章',
+      styles: {
+        ...defaultWechatStyles,
+        titleColor: '#27ae60',
+        subtitleColor: '#2ecc71',
+        textColor: '#2c3e50',
+        linkColor: '#16a085'
+      }
+    },
+    {
+      name: '优雅紫色',
+      description: '优雅的紫色调，适合文艺类文章',
+      styles: {
+        ...defaultWechatStyles,
+        titleColor: '#8e44ad',
+        subtitleColor: '#9b59b6',
+        textColor: '#2c3e50',
+        linkColor: '#e74c3c'
+      }
+    },
+    {
+      name: '商务蓝色',
+      description: '专业的蓝色调，适合商务类文章',
+      styles: {
+        ...defaultWechatStyles,
+        titleColor: '#2980b9',
+        subtitleColor: '#3498db',
+        textColor: '#2c3e50',
+        linkColor: '#e74c3c'
+      }
+    }
+  ];
+};
+
+/**
+ * 验证微信公众号HTML内容
+ * @param html HTML内容
+ * @returns 验证结果
+ */
+export const validateWechatHTML = (html: string) => {
+  const issues: Array<{ type: 'warning' | 'error'; message: string; suggestion: string }> = [];
+
+  // 检查是否包含不支持的标签
+  const unsupportedTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'audio', 'video'];
+  unsupportedTags.forEach(tag => {
+    const regex = new RegExp(`<${tag}\\b[^>]*>`, 'gi');
+    if (regex.test(html)) {
+      issues.push({
+        type: 'error',
+        message: `包含不支持的标签: ${tag}`,
+        suggestion: `移除所有 <${tag}> 标签`
+      });
+    }
+  });
+
+  // 检查是否包含外部链接
+  const externalLinkRegex = /<a\s+href="(https?:\/\/[^"]+)"/gi;
+  const externalLinks = html.match(externalLinkRegex);
+  if (externalLinks && externalLinks.length > 0) {
+    issues.push({
+      type: 'warning',
+      message: `包含 ${externalLinks.length} 个外部链接`,
+      suggestion: '考虑将外部链接转换为脚注'
+    });
+  }
+
+  // 检查图片链接
+  const imageRegex = /<img\s+src="([^"]+)"/gi;
+  let match;
+  while ((match = imageRegex.exec(html)) !== null) {
+    const src = match[1];
+    if (src.startsWith('http') && !src.includes('mmbiz.qpic.cn')) {
+      issues.push({
+        type: 'warning',
+        message: '包含外部图片链接',
+        suggestion: '建议将图片上传到微信素材库'
+      });
+    }
+  }
+
+  // 检查HTML长度
+  if (html.length > 200000) {
+    issues.push({
+      type: 'warning',
+      message: 'HTML内容过长',
+      suggestion: '考虑分割为多篇文章'
+    });
+  }
+
+  return {
+    isValid: issues.filter(issue => issue.type === 'error').length === 0,
+    issues,
+    wordCount: html.replace(/<[^>]*>/g, '').length,
+    htmlSize: html.length
+  };
 };
 
 /**

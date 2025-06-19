@@ -1,0 +1,89 @@
+{
+  "name": "现代化 Markdown 编辑器",
+  "short_name": "MD编辑器",
+  "description": "功能完整的现代化 Markdown 编辑器，支持实时预览、多格式导出、离线编辑",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "zh-CN",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新建文档",
+      "short_name": "新建",
+      "description": "创建新的 Markdown 文档",
+      "url": "/?action=new",
+      "icons": [
+        {
+          "src": "/icons/new-document.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "打开最近文档",
+      "short_name": "最近",
+      "description": "打开最近编辑的文档",
+      "url": "/?action=recent",
+      "icons": [
+        {
+          "src": "/icons/recent-document.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

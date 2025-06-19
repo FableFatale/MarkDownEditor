@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --port 3001 --strictPort false",
     "build": "tsc && vite build",
+    "build:analyze": "ANALYZE=true npm run build",
+    "build:prod": "NODE_ENV=production npm run build",
     "preview": "vite preview",
     "clean": "rimraf node_modules/.vite && vite --force",
     "test": "npx jest",
@@ -74,6 +76,7 @@
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.27.1",
     "@playwright/test": "^1.52.0",
+    "@rollup/plugin-terser": "^0.4.4",
     "@tailwindcss/typography": "^0.5.10",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -86,9 +89,11 @@
     "jest-environment-jsdom": "^29.7.0",
     "playwright": "^1.52.0",
     "postcss": "^8.5.3",
+    "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.3.4",
     "typescript": "^5.8.3",
-    "vite": "^6.3.2"
+    "vite": "^6.3.2",
+    "vite-plugin-compression": "^0.5.1"
   }
 }

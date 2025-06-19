@@ -15,8 +15,15 @@ import TailwindSettingsDialog from './components/TailwindSettingsDialog';
 import TailwindSpellChecker from './components/TailwindSpellChecker';
 import SEOAnalyzer from './components/SEOAnalyzer';
 import ImageCompressor from './components/ImageCompressor';
+import SEOTestButton from './components/SEOTestButton';
+import SEOErrorBoundary from './components/SEOErrorBoundary';
 import { ModernBackground, MouseFollower } from './components/FloatingElements';
 import ModernCard from './components/ModernCard';
+import PWAStatus from './components/PWAStatus';
+// 开发环境下导入SEO测试工具
+if (process.env.NODE_ENV === 'development') {
+  import('./utils/seoTestUtils');
+}
 
 // 样式导入
 import './tailwind.css';
@@ -410,11 +417,13 @@ const TailwindAppContent: React.FC = () => {
 
       {/* SEO分析器 */}
       {showSEOAnalyzer && (
-        <SEOAnalyzer
-          content={value}
-          isOpen={showSEOAnalyzer}
-          onClose={() => setShowSEOAnalyzer(false)}
-        />
+        <SEOErrorBoundary>
+          <SEOAnalyzer
+            content={value}
+            isOpen={showSEOAnalyzer}
+            onClose={() => setShowSEOAnalyzer(false)}
+          />
+        </SEOErrorBoundary>
       )}
 
       {/* 图片压缩器 */}
@@ -429,6 +438,16 @@ const TailwindAppContent: React.FC = () => {
             showNotification('图片已插入', 'success');
           }}
         />
+      )}
+
+      {/* PWA状态管理 */}
+      <PWAStatus />
+
+      {/* 开发环境下的SEO测试按钮 */}
+      {process.env.NODE_ENV === 'development' && (
+        <SEOErrorBoundary>
+          <SEOTestButton />
+        </SEOErrorBoundary>
       )}
 
       {/* 现代化通知系统 */}

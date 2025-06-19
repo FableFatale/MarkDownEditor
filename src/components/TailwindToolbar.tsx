@@ -22,7 +22,9 @@ import {
   BookOpenIcon,
   ChartBarIcon,
   CubeTransparentIcon,
+  VideoCameraIcon,
 } from '@heroicons/react/24/outline';
+import TailwindVideoLinkManager from './TailwindVideoLinkManager';
 
 interface TailwindToolbarProps {
   content: string;
@@ -40,6 +42,7 @@ interface TailwindToolbarProps {
   onShowSpellChecker: () => void;
   onShowSEOAnalyzer: () => void;
   onShowImageCompressor: () => void;
+  onInsertVideo?: (markdown: string) => void;
 }
 
 const TailwindToolbar: React.FC<TailwindToolbarProps> = ({
@@ -58,8 +61,10 @@ const TailwindToolbar: React.FC<TailwindToolbarProps> = ({
   onShowSpellChecker,
   onShowSEOAnalyzer,
   onShowImageCompressor,
+  onInsertVideo,
 }) => {
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [videoManagerOpen, setVideoManagerOpen] = useState(false);
 
   const buttonClass = `
     relative p-2 rounded-lg transition-all duration-300 group overflow-hidden
@@ -77,6 +82,7 @@ const TailwindToolbar: React.FC<TailwindToolbarProps> = ({
     { icon: ItalicIcon, action: 'italic', tooltip: '斜体 (Ctrl+I)' },
     { icon: LinkIcon, action: 'link', tooltip: '链接 (Ctrl+K)' },
     { icon: PhotoIcon, action: 'image', tooltip: '图片 (Ctrl+Alt+I)' },
+    { icon: VideoCameraIcon, action: 'video-link', tooltip: '视频链接' },
     { icon: TableCellsIcon, action: 'table', tooltip: '表格 (Ctrl+Alt+T)' },
     { icon: ListBulletIcon, action: 'bullet-list', tooltip: '无序列表 (Ctrl+Alt+U)' },
     { icon: CodeBracketIcon, action: 'code', tooltip: '代码块 (Ctrl+Alt+E)' },
@@ -87,6 +93,19 @@ const TailwindToolbar: React.FC<TailwindToolbarProps> = ({
     setShowExportMenu(false);
     // 这里可以调用导出功能
     console.log(`Export to: ${format}`);
+  };
+
+  const handleFormatClick = (action: string) => {
+    if (action === 'video-link') {
+      setVideoManagerOpen(true);
+    } else {
+      onFormatText(action);
+    }
+  };
+
+  const handleVideoInsert = (markdown: string) => {
+    onInsertVideo?.(markdown);
+    setVideoManagerOpen(false);
   };
 
   return (
@@ -113,7 +132,7 @@ const TailwindToolbar: React.FC<TailwindToolbarProps> = ({
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               className={buttonClass}
-              onClick={() => onFormatText(action)}
+              onClick={() => handleFormatClick(action)}
               title={tooltip}
             >
               <Icon className="w-5 h-5 relative z-10" />
@@ -402,6 +421,13 @@ const TailwindToolbar: React.FC<TailwindToolbarProps> = ({
           />
         )}
       </div>
+
+      {/* 视频链接管理器 */}
+      <TailwindVideoLinkManager
+        isOpen={videoManagerOpen}
+        onClose={() => setVideoManagerOpen(false)}
+        onInsert={handleVideoInsert}
+      />
     </div>
   );
 };

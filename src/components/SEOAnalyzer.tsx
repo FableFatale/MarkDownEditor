@@ -40,6 +40,176 @@ interface SEOSuggestion {
   action?: string;
 }
 
+// 提取关键词
+const extractKeywords = (text: string) => {
+  // 移除标点符号和特殊字符，转换为小写
+  const cleanText = text.toLowerCase().replace(/[^\w\s\u4e00-\u9fff]/g, ' ');
+  const words = cleanText.split(/\s+/).filter(word => word.length > 2);
+
+  // 常见停用词（中英文）
+  const stopWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those',
+    '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这', '那', '他', '她', '它', '我们', '你们', '他们'
+  ]);
+
+  // 统计词频
+  const wordCount: { [key: string]: number } = {};
+  words.forEach(word => {
+    if (!stopWords.has(word) && word.length > 1) {
+      wordCount[word] = (wordCount[word] || 0) + 1;
+    }
+  });
+
+  // 转换为数组并计算密度
+  const totalWords = words.length;
+  return Object.entries(wordCount)
+    .map(([word, count]) => ({
+      word,
+      count,
+      density: (count / totalWords) * 100,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20); // 取前20个关键词
+};
+
+// 估算音节数（简化版）
+const estimateSyllables = (text: string): number => {
+  const words = text.toLowerCase().match(/\b[a-z]+\b/g) || [];
+  return words.reduce((total, word) => {
+    // 简单的音节估算
+    const vowels = word.match(/[aeiouy]+/g) || [];
+    let syllables = vowels.length;
+    if (word.endsWith('e')) syllables--;
+    return total + Math.max(1, syllables);
+  }, 0);
+};
+
+// 计算可读性评分（简化版Flesch Reading Ease）
+const calculateReadabilityScore = (text: string, wordCount: number): number => {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+  const syllables = estimateSyllables(text);
+
+  if (sentences === 0 || wordCount === 0) return 0;
+
+  // 简化的可读性公式
+  const avgWordsPerSentence = wordCount / sentences;
+  const avgSyllablesPerWord = syllables / wordCount;
+
+  // 调整后的评分（0-100，100最易读）
+  const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
+  return Math.max(0, Math.min(100, score));
+};
+
+// 提取元数据
+const extractMetaData = (text: string) => {
+  const lines = text.split('\n');
+  const firstHeading = lines.find(line => line.match(/^#\s+/));
+  const title = firstHeading?.replace(/^#\s+/, '').trim();
+
+  // 尝试提取描述（第一段文本）
+  const firstParagraph = lines.find(line =>
+    line.trim().length > 0 &&
+    !line.match(/^#+\s/) &&
+    !line.match(/^[-*+]\s/) &&
+    !line.match(/^\d+\.\s/)
+  );
+
+  return {
+    title,
+    description: firstParagraph?.trim().substring(0, 160),
+  };
+};
+
+// 生成SEO建议
+const generateSEOSuggestions = (
+  wordCount: number,
+  headingCount: { [key: string]: number },
+  keywords: { word: string; count: number; density: number }[],
+  metaData: { title?: string; description?: string }
+): SEOSuggestion[] => {
+  const suggestions: SEOSuggestion[] = [];
+
+  // 字数检查
+  if (wordCount < 300) {
+    suggestions.push({
+      type: 'warning',
+      message: '文章字数较少，建议增加到300字以上以提高SEO效果',
+      action: '增加更多有价值的内容'
+    });
+  } else if (wordCount > 2000) {
+    suggestions.push({
+      type: 'info',
+      message: '文章字数较多，考虑分割为多篇文章或添加目录',
+      action: '优化文章结构'
+    });
+  }
+
+  // 标题检查
+  if (!headingCount.H1) {
+    suggestions.push({
+      type: 'error',
+      message: '缺少主标题（H1），这对SEO很重要',
+      action: '添加一个主标题'
+    });
+  } else if (headingCount.H1 > 1) {
+    suggestions.push({
+      type: 'warning',
+      message: '有多个主标题（H1），建议只使用一个',
+      action: '将其他H1改为H2或H3'
+    });
+  }
+
+  // 标题层级检查
+  if (headingCount.H2 && !headingCount.H1) {
+    suggestions.push({
+      type: 'warning',
+      message: '有H2标题但缺少H1，建议保持标题层级结构',
+      action: '添加H1主标题'
+    });
+  }
+
+  // 关键词密度检查
+  const topKeyword = keywords[0];
+  if (topKeyword && topKeyword.density > 5) {
+    suggestions.push({
+      type: 'warning',
+      message: `关键词"${topKeyword.word}"密度过高（${topKeyword.density.toFixed(1)}%），可能被视为关键词堆砌`,
+      action: '适当减少关键词使用频率'
+    });
+  }
+
+  // 元数据检查
+  if (!metaData.title) {
+    suggestions.push({
+      type: 'error',
+      message: '缺少标题，这对SEO至关重要',
+      action: '添加一个描述性的标题'
+    });
+  } else if (metaData.title.length > 60) {
+    suggestions.push({
+      type: 'warning',
+      message: '标题过长，建议控制在60字符以内',
+      action: '缩短标题长度'
+    });
+  }
+
+  if (!metaData.description) {
+    suggestions.push({
+      type: 'warning',
+      message: '建议添加文章描述，有助于搜索引擎理解内容',
+      action: '在开头添加简短的内容描述'
+    });
+  } else if (metaData.description.length > 160) {
+    suggestions.push({
+      type: 'info',
+      message: '描述较长，搜索结果中可能被截断',
+      action: '考虑缩短描述到160字符以内'
+    });
+  }
+
+  return suggestions;
+};
+
 const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({
   content,
   isOpen,
@@ -47,9 +217,86 @@ const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'keywords' | 'readability' | 'meta'>('overview');
 
+  // 安全的关闭处理
+  const handleClose = React.useCallback(() => {
+    try {
+      onClose();
+    } catch (error) {
+      console.error('SEO分析器关闭时出错:', error);
+    }
+  }, [onClose]);
+
+  // 调试信息
+  useEffect(() => {
+    if (isOpen) {
+      console.log('SEOAnalyzer 已打开，内容长度:', content.length);
+      console.log('内容预览:', content.substring(0, 100) + '...');
+    }
+  }, [isOpen, content]);
+
+  // 组件卸载时的清理
+  useEffect(() => {
+    return () => {
+      // 清理任何可能的定时器或事件监听器
+      console.log('SEOAnalyzer 组件正在卸载');
+    };
+  }, []);
+
   // 计算SEO指标
   const seoMetrics = useMemo((): SEOMetrics => {
-    if (!content.trim()) {
+    try {
+      if (!content.trim()) {
+        return {
+          wordCount: 0,
+          characterCount: 0,
+          readingTime: 0,
+          headingCount: {},
+          keywords: [],
+          readabilityScore: 0,
+          suggestions: [],
+          metaData: {},
+        };
+      }
+
+      // 基础统计
+      const words = content.trim().split(/\s+/).filter(word => word.length > 0);
+      const wordCount = words.length;
+      const characterCount = content.length;
+      const readingTime = Math.ceil(wordCount / 200); // 假设每分钟200词
+
+      // 标题统计
+      const headingMatches = content.match(/^#{1,6}\s+.+$/gm) || [];
+      const headingCount: { [key: string]: number } = {};
+      headingMatches.forEach(heading => {
+        const level = heading.match(/^#+/)?.[0].length || 0;
+        const key = `H${level}`;
+        headingCount[key] = (headingCount[key] || 0) + 1;
+      });
+
+      // 关键词分析
+      const keywords = extractKeywords(content);
+
+      // 可读性评分（简化版）
+      const readabilityScore = calculateReadabilityScore(content, wordCount);
+
+      // 提取元数据
+      const metaData = extractMetaData(content);
+
+      // 生成建议
+      const suggestions = generateSEOSuggestions(wordCount, headingCount, keywords, metaData);
+
+      return {
+        wordCount,
+        characterCount,
+        readingTime,
+        headingCount,
+        keywords,
+        readabilityScore,
+        suggestions,
+        metaData,
+      };
+    } catch (error) {
+      console.error('SEO分析计算错误:', error);
       return {
         wordCount: 0,
         characterCount: 0,
@@ -57,219 +304,17 @@ const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({
         headingCount: {},
         keywords: [],
         readabilityScore: 0,
-        suggestions: [],
+        suggestions: [{
+          type: 'error',
+          message: 'SEO分析计算出错，请检查内容格式',
+          action: '请尝试重新分析或联系技术支持'
+        }],
         metaData: {},
       };
     }
-
-    // 基础统计
-    const words = content.trim().split(/\s+/).filter(word => word.length > 0);
-    const wordCount = words.length;
-    const characterCount = content.length;
-    const readingTime = Math.ceil(wordCount / 200); // 假设每分钟200词
-
-    // 标题统计
-    const headingMatches = content.match(/^#{1,6}\s+.+$/gm) || [];
-    const headingCount: { [key: string]: number } = {};
-    headingMatches.forEach(heading => {
-      const level = heading.match(/^#+/)?.[0].length || 0;
-      const key = `H${level}`;
-      headingCount[key] = (headingCount[key] || 0) + 1;
-    });
-
-    // 关键词分析
-    const keywords = extractKeywords(content);
-
-    // 可读性评分（简化版）
-    const readabilityScore = calculateReadabilityScore(content, wordCount);
-
-    // 提取元数据
-    const metaData = extractMetaData(content);
-
-    // 生成建议
-    const suggestions = generateSEOSuggestions(wordCount, headingCount, keywords, metaData);
-
-    return {
-      wordCount,
-      characterCount,
-      readingTime,
-      headingCount,
-      keywords,
-      readabilityScore,
-      suggestions,
-      metaData,
-    };
   }, [content]);
 
-  // 提取关键词
-  const extractKeywords = (text: string) => {
-    // 移除标点符号和特殊字符，转换为小写
-    const cleanText = text.toLowerCase().replace(/[^\w\s\u4e00-\u9fff]/g, ' ');
-    const words = cleanText.split(/\s+/).filter(word => word.length > 2);
-    
-    // 常见停用词（中英文）
-    const stopWords = new Set([
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those',
-      '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这', '那', '他', '她', '它', '我们', '你们', '他们'
-    ]);
 
-    // 统计词频
-    const wordCount: { [key: string]: number } = {};
-    words.forEach(word => {
-      if (!stopWords.has(word) && word.length > 1) {
-        wordCount[word] = (wordCount[word] || 0) + 1;
-      }
-    });
-
-    // 转换为数组并计算密度
-    const totalWords = words.length;
-    return Object.entries(wordCount)
-      .map(([word, count]) => ({
-        word,
-        count,
-        density: (count / totalWords) * 100,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 20); // 取前20个关键词
-  };
-
-  // 计算可读性评分（简化版Flesch Reading Ease）
-  const calculateReadabilityScore = (text: string, wordCount: number): number => {
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-    const syllables = estimateSyllables(text);
-    
-    if (sentences === 0 || wordCount === 0) return 0;
-    
-    // 简化的可读性公式
-    const avgWordsPerSentence = wordCount / sentences;
-    const avgSyllablesPerWord = syllables / wordCount;
-    
-    // 调整后的评分（0-100，100最易读）
-    const score = 206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord);
-    return Math.max(0, Math.min(100, score));
-  };
-
-  // 估算音节数（简化版）
-  const estimateSyllables = (text: string): number => {
-    const words = text.toLowerCase().match(/\b[a-z]+\b/g) || [];
-    return words.reduce((total, word) => {
-      // 简单的音节估算
-      const vowels = word.match(/[aeiouy]+/g) || [];
-      let syllables = vowels.length;
-      if (word.endsWith('e')) syllables--;
-      return total + Math.max(1, syllables);
-    }, 0);
-  };
-
-  // 提取元数据
-  const extractMetaData = (text: string) => {
-    const lines = text.split('\n');
-    const firstHeading = lines.find(line => line.match(/^#\s+/));
-    const title = firstHeading?.replace(/^#\s+/, '').trim();
-    
-    // 尝试提取描述（第一段文本）
-    const firstParagraph = lines.find(line => 
-      line.trim().length > 0 && 
-      !line.match(/^#+\s/) && 
-      !line.match(/^[-*+]\s/) &&
-      !line.match(/^\d+\.\s/)
-    );
-    
-    return {
-      title,
-      description: firstParagraph?.trim().substring(0, 160),
-    };
-  };
-
-  // 生成SEO建议
-  const generateSEOSuggestions = (
-    wordCount: number,
-    headingCount: { [key: string]: number },
-    keywords: { word: string; count: number; density: number }[],
-    metaData: { title?: string; description?: string }
-  ): SEOSuggestion[] => {
-    const suggestions: SEOSuggestion[] = [];
-
-    // 字数检查
-    if (wordCount < 300) {
-      suggestions.push({
-        type: 'warning',
-        message: '文章字数较少，建议增加到300字以上以提高SEO效果',
-        action: '增加更多有价值的内容'
-      });
-    } else if (wordCount > 2000) {
-      suggestions.push({
-        type: 'info',
-        message: '文章字数较多，考虑分割为多篇文章或添加目录',
-        action: '优化文章结构'
-      });
-    }
-
-    // 标题检查
-    if (!headingCount.H1) {
-      suggestions.push({
-        type: 'error',
-        message: '缺少主标题（H1），这对SEO很重要',
-        action: '添加一个主标题'
-      });
-    } else if (headingCount.H1 > 1) {
-      suggestions.push({
-        type: 'warning',
-        message: '有多个主标题（H1），建议只使用一个',
-        action: '将其他H1改为H2或H3'
-      });
-    }
-
-    // 标题层级检查
-    if (headingCount.H2 && !headingCount.H1) {
-      suggestions.push({
-        type: 'warning',
-        message: '有H2标题但缺少H1，建议保持标题层级结构',
-        action: '添加H1主标题'
-      });
-    }
-
-    // 关键词密度检查
-    const topKeyword = keywords[0];
-    if (topKeyword && topKeyword.density > 5) {
-      suggestions.push({
-        type: 'warning',
-        message: `关键词"${topKeyword.word}"密度过高（${topKeyword.density.toFixed(1)}%），可能被视为关键词堆砌`,
-        action: '适当减少关键词使用频率'
-      });
-    }
-
-    // 元数据检查
-    if (!metaData.title) {
-      suggestions.push({
-        type: 'error',
-        message: '缺少标题，这对SEO至关重要',
-        action: '添加一个描述性的标题'
-      });
-    } else if (metaData.title.length > 60) {
-      suggestions.push({
-        type: 'warning',
-        message: '标题过长，建议控制在60字符以内',
-        action: '缩短标题长度'
-      });
-    }
-
-    if (!metaData.description) {
-      suggestions.push({
-        type: 'warning',
-        message: '建议添加文章描述，有助于搜索引擎理解内容',
-        action: '在开头添加简短的内容描述'
-      });
-    } else if (metaData.description.length > 160) {
-      suggestions.push({
-        type: 'info',
-        message: '描述较长，搜索结果中可能被截断',
-        action: '考虑缩短描述到160字符以内'
-      });
-    }
-
-    return suggestions;
-  };
 
   const getSuggestionIcon = (type: SEOSuggestion['type']) => {
     switch (type) {
@@ -299,25 +344,26 @@ const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({
   ];
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
-        <>
-          {/* 背景遮罩 */}
+        <motion.div
+          key="seo-analyzer-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={handleClose}
+        >
+          {/* 对话框 */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={onClose}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* 对话框 */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
               {/* 头部 */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center space-x-3">
@@ -329,7 +375,7 @@ const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <XMarkIcon className="w-5 h-5" />
@@ -604,10 +650,9 @@ const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({
               </div>
             </motion.div>
           </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
+        )}
+      </AnimatePresence>
+    );
 };
 
 export default SEOAnalyzer;
