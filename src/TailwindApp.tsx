@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ThemeProvider } from './theme/ThemeContext';
 import { useThemeContext } from './theme/ThemeContext';
-import TailwindMarkdownEditor from './components/TailwindMarkdownEditor';
+import TailwindMarkdownEditor from './components/core/TailwindMarkdownEditor';
 import { useAutoSave } from './hooks/useAutoSave';
-import { AnimatedTransition } from './components/AnimatedTransition';
+import { AnimatedTransition } from './components/ui/AnimatedTransition';
 import { motion } from 'framer-motion';
 
 // TailwindCSS组件导入
-import TailwindToolbarFixed from './components/TailwindToolbarFixed';
-import TailwindSaveStatus from './components/TailwindSaveStatus';
-import TailwindVersionHistory from './components/TailwindVersionHistory';
-import TailwindOutlineNavigator from './components/TailwindOutlineNavigator';
-import TailwindSettingsDialog from './components/TailwindSettingsDialog';
-import TailwindSpellChecker from './components/TailwindSpellChecker';
-import SEOAnalyzer from './components/SEOAnalyzer';
-import ImageCompressor from './components/ImageCompressor';
-import SEOTestButton from './components/SEOTestButton';
-import SEOErrorBoundary from './components/SEOErrorBoundary';
-import { ModernBackground, MouseFollower } from './components/FloatingElements';
-import ModernCard from './components/ModernCard';
-import PWAStatus from './components/PWAStatus';
+import TailwindToolbarFixed from './components/toolbar/TailwindToolbarFixed';
+import TailwindSaveStatus from './components/layout/TailwindSaveStatus';
+import TailwindVersionHistory from './components/dialogs/TailwindVersionHistory';
+import TailwindOutlineNavigator from './components/features/analysis/TailwindOutlineNavigator';
+import TailwindSettingsDialog from './components/dialogs/TailwindSettingsDialog';
+import TailwindSpellChecker from './components/features/analysis/TailwindSpellChecker';
+import SEOAnalyzer from './components/features/seo/SEOAnalyzer';
+import ImageCompressor from './components/features/media/ImageCompressor';
+import SEOTestButton from './components/features/seo/SEOTestButton';
+import SEOErrorBoundary from './components/features/seo/SEOErrorBoundary';
+import { ModernBackground, MouseFollower } from './components/ui/FloatingElements';
+import ModernCard from './components/ui/ModernCard';
+import PWAStatus from './components/layout/PWAStatus';
 // 开发环境下导入SEO测试工具
 if (process.env.NODE_ENV === 'development') {
   import('./utils/seoTestUtils');
